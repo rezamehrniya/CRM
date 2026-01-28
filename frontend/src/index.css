@@ -1,0 +1,29 @@
+@import './styles/theme.css';
+@import './styles/aurora.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    font-family: 'Peyda', system-ui, sans-serif;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    min-height: 100vh;
+  }
+}
+
+/* Layout */
+.app-shell-sidebar {
+  width: 280px;
+  transition: width 0.2s ease;
+}
+
+.app-shell-sidebar.collapsed {
+  width: 80px;
+}

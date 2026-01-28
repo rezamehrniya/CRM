@@ -1,0 +1,57 @@
+/**
+ * Sakhtar CRM — Design tokens (HSL)
+ * Primary: مجنتا #D01060 → 335 86% 44%
+ * Light: frosted با ته‌رنگ بنفش | Dark: glass/aurora
+ * برای white-label: می‌توان فقط --primary (و در صورت نیاز --secondary) را per tenant override کرد.
+ */
+
+:root {
+  --radius: 18px;
+
+  /* Light */
+  --background: 240 33% 98%;
+  --foreground: 240 15% 12%;
+
+  --card: 240 25% 100%;
+  --card-foreground: 240 15% 12%;
+
+  --muted: 240 18% 95%;
+  --muted-foreground: 240 10% 40%;
+
+  --border: 240 18% 88%;
+  --input: 240 18% 88%;
+  --ring: 335 86% 44%;
+
+  --primary: 335 86% 44%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 255 55% 50%;
+  --secondary-foreground: 0 0% 100%;
+
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 0 0% 100%;
+}
+
+.dark {
+  --background: 240 20% 7%;
+  --foreground: 240 10% 95%;
+
+  --card: 240 18% 10%;
+  --card-foreground: 240 10% 95%;
+
+  --muted: 240 15% 14%;
+  --muted-foreground: 240 8% 70%;
+
+  --border: 240 12% 18%;
+  --input: 240 12% 18%;
+  --ring: 335 86% 44%;
+
+  --primary: 335 86% 44%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 255 55% 55%;
+  --secondary-foreground: 0 0% 100%;
+
+  --destructive: 0 70% 55%;
+  --destructive-foreground: 0 0% 100%;
+}

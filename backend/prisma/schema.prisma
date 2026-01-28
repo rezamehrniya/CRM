@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  status    String   // ACTIVE, SUSPENDED
+  createdAt DateTime @default(now())
+
+  memberships   Membership[]
+  sessions      Session[]
+  subscriptions Subscription[]
+  contacts      Contact[]
+  companies     Company[]
+  pipelines     Pipeline[]
+  deals         Deal[]
+  activities    Activity[]
+  tasks         Task[]
+  auditLogs     AuditLog[]
+  invoices      Invoice[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  phone        String?
+  email        String?
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  status       String   // ACTIVE, DISABLED
+
+  memberships Membership[]
+  sessions    Session[]
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  userId           String
+  tenantId         String
+  refreshTokenHash String
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      String   // OWNER, MEMBER
+  status    String   // INVITED, ACTIVE, DISABLED
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+}
+
+model Contact {
+  id          String   @id @default(cuid())
+  tenantId    String
+  fullName    String
+  phone       String?
+  email       String?
+  companyId   String?
+  ownerUserId String?
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company  Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  deals    Deal[]
+  activities Activity[]
+  tasks    Task[]
+}
+
+model Company {
+  id       String  @id @default(cuid())
+  tenantId String
+  name     String
+  phone    String?
+  website  String?
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contacts Contact[]
+  deals    Deal[]
+}
+
+model Pipeline {
+  id        String  @id @default(cuid())
+  tenantId  String
+  name      String
+  isDefault Boolean @default(false)
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stages PipelineStage[]
+  deals  Deal[]
+}
+
+model PipelineStage {
+  id         String  @id @default(cuid())
+  tenantId   String
+  pipelineId String
+  name       String
+  order      Int
+
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals    Deal[]
+}
+
+model Deal {
+  id                String    @id @default(cuid())
+  tenantId          String
+  title             String
+  amount            Decimal?  @db.Decimal(18, 0)
+  stageId           String
+  pipelineId        String
+  contactId         String?
+  companyId         String?
+  ownerUserId       String?
+  expectedCloseDate DateTime?
+
+  stage    PipelineStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  pipeline Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  contact  Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  company  Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  activities Activity[]
+  tasks    Task[]
+}
+
+model Activity {
+  id              String   @id @default(cuid())
+  tenantId        String
+  type            String   // CALL, MEETING, NOTE
+  contactId       String?
+  dealId          String?
+  body            String?
+  happenedAt      DateTime
+  createdByUserId String?
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+}
+
+model Task {
+  id               String    @id @default(cuid())
+  tenantId         String
+  title            String
+  dueAt            DateTime?
+  status           String    // OPEN, DONE
+  assignedToUserId String?
+  contactId        String?
+  dealId           String?
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String?
+  metaJson    Json?
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id             String   @id @default(cuid())
+  tenantId       String   @unique
+  planCode       String   // CRM_ANNUAL
+  status         String   // ACTIVE, EXPIRED
+  startsAt       DateTime
+  endsAt         DateTime
+  baseSeatLimit  Int      @default(20)
+  addonSeatCount Int      @default(0)
+  priceAnnual    Int?     // IRR
+
+  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+}
+
+model Invoice {
+  id          String    @id @default(cuid())
+  tenantId    String
+  status      String    // DRAFT, ISSUED, PAID
+  issuedAt    DateTime?
+  dueAt       DateTime?
+  paidAt      DateTime?
+  totalAmount Int?
+
+  tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items  InvoiceItem[]
+}
+
+model InvoiceItem {
+  id         String @id @default(cuid())
+  invoiceId  String
+  type       String // RENEWAL, ADDON_SEATS
+  quantity   Int
+  unitPrice  Int
+  totalPrice Int
+  metaJson   Json?  // e.g. { "packSize": 5 }
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}

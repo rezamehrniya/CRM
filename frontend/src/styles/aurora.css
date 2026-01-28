@@ -1,0 +1,95 @@
+/**
+ * Aurora / Dark-glass UI
+ * پس‌زمینه گرادیان و کارت/پنل شیشه‌ای
+ */
+
+.aurora-bg {
+  position: relative;
+  isolation: isolate;
+}
+
+.aurora-bg::before {
+  content: "";
+  position: absolute;
+  inset: -60px;
+  z-index: -1;
+  background:
+    radial-gradient(600px 400px at 20% 10%, hsl(335 86% 44% / 0.25), transparent 55%),
+    radial-gradient(500px 380px at 85% 25%, hsl(255 55% 55% / 0.18), transparent 55%),
+    radial-gradient(520px 420px at 45% 90%, hsl(43 94% 52% / 0.14), transparent 60%),
+    radial-gradient(520px 420px at 5% 80%, hsl(198 87% 49% / 0.1), transparent 60%);
+  filter: blur(24px);
+  opacity: 1;
+}
+
+.dark .aurora-bg::before {
+  background:
+    radial-gradient(600px 400px at 20% 10%, hsl(335 86% 44% / 0.2), transparent 55%),
+    radial-gradient(500px 380px at 85% 25%, hsl(255 55% 55% / 0.15), transparent 55%),
+    radial-gradient(520px 420px at 45% 90%, hsl(43 94% 52% / 0.1), transparent 60%),
+    radial-gradient(520px 420px at 5% 80%, hsl(198 87% 49% / 0.08), transparent 60%);
+}
+
+/* Glass Card — کارت‌های KPI و لیست */
+.glass-card {
+  border-radius: 20px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
+}
+
+.dark .glass-card {
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.45);
+}
+
+/* Glass Panel — سایدبار و پنل‌های بزرگ */
+.glass-panel {
+  border-radius: 24px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(0 0 0 / 0.2);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.45);
+}
+
+.dark .glass-panel {
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(0 0 0 / 0.3);
+}
+
+/* Data Table surface — خوانایی بیشتر، glass ملایم‌تر */
+.glass-table-surface {
+  border-radius: 20px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card) / 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.2);
+}
+
+.dark .glass-table-surface {
+  background: hsl(var(--card) / 0.9);
+}
+
+/* Sidebar active pill */
+.sidebar-active {
+  background: linear-gradient(
+    90deg,
+    hsl(335 86% 44% / 0.35),
+    hsl(255 55% 55% / 0.18)
+  );
+  border: 1px solid hsl(335 86% 44% / 0.25);
+  color: hsl(var(--primary-foreground));
+}
+
+.sidebar-active:hover {
+  background: linear-gradient(
+    90deg,
+    hsl(335 86% 44% / 0.4),
+    hsl(255 55% 55% / 0.22)
+  );
+}
