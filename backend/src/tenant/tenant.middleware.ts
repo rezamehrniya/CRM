@@ -22,9 +22,11 @@ export class TenantMiddleware implements NestMiddleware {
   constructor(private readonly prisma: PrismaService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
-    let slug = req.params['tenantSlug'];
+    let slug: string | undefined = Array.isArray(req.params['tenantSlug'])
+      ? req.params['tenantSlug'][0]
+      : req.params['tenantSlug'];
     if (!slug && typeof req.path === 'string') {
-      const match = req.path.match(/^\/?t\/([^/]+)/);
+      const match = req.path.match(/\/t\/([^/]+)/);
       slug = match?.[1];
     }
     if (!slug || typeof slug !== 'string') {

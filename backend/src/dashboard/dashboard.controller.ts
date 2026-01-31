@@ -11,7 +11,8 @@ export class DashboardController {
   @Get()
   async getKpis(@Req() req: Request) {
     const tenant = (req as any).tenant;
+    const user = (req as any).user;
     if (!tenant) return { contactsCount: 0, dealsCount: 0, tasksDueToday: 0, pipelineValue: '0' };
-    return this.dashboard.getKpis(tenant);
+    return this.dashboard.getKpis(tenant, user?.userId);
   }
 }

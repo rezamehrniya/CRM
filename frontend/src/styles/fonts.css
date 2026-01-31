@@ -1,0 +1,14 @@
+/**
+ * فونت با نام FaNum برای نمایش اعداد فارسی (۰–۹).
+ * از Vazirmatn با نام «Vazirmatn FaNum» استفاده می‌شود تا در پروژه پیدا شود.
+ */
+@import '@fontsource/vazirmatn/400.css';
+
+/* همان فونت با نام حاوی FaNum برای استفاده در کلاس .fa-num */
+@font-face {
+  font-family: 'Vazirmatn FaNum';
+  src: url('https://cdn.jsdelivr.net/npm/@fontsource/vazirmatn@5.0.8/files/vazirmatn-arabic-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

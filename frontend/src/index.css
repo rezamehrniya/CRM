@@ -1,5 +1,6 @@
 @import './styles/theme.css';
 @import './styles/aurora.css';
+@import './styles/fonts.css';
 
 @tailwind base;
 @tailwind components;
@@ -10,9 +11,10 @@
     font-size: 14px;
   }
 
+  /* پس‌زمینه پایه از پالت Primer: Light = --bg-default، Dark = --bg-default در .dark */
   body {
     font-family: 'Peyda', system-ui, sans-serif;
-    background: hsl(var(--background));
+    background: var(--bg-default);
     color: hsl(var(--foreground));
     min-height: 100vh;
   }
@@ -26,4 +28,28 @@
 
 .app-shell-sidebar.collapsed {
   width: 80px;
+}
+
+@media (max-width: 1023px) {
+  .app-shell-sidebar.collapsed {
+    width: 280px;
+  }
+}
+
+.app-shell-main {
+  margin-inline-start: 0;
+}
+
+@media (min-width: 1024px) {
+  .app-shell-main.collapsed {
+    margin-inline-start: 112px;
+  }
+  .app-shell-main:not(.collapsed) {
+    margin-inline-start: 312px;
+  }
+}
+
+/* اعداد فارسی با فونت FaNum */
+.fa-num {
+  font-family: 'Vazirmatn FaNum', 'Vazirmatn', 'Peyda', system-ui, sans-serif;
 }

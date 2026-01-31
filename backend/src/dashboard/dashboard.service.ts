@@ -6,31 +6,54 @@ import { TenantContext } from '../tenant/tenant.middleware';
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getKpis(tenant: TenantContext) {
+  async getKpis(tenant: TenantContext, userId?: string) {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
 
-    const [contactsCount, dealsCount, tasksDueToday, pipelineValue] = await Promise.all([
-      this.prisma.contact.count({ where: { tenantId: tenant.id } }),
-      this.prisma.deal.count({ where: { tenantId: tenant.id } }),
-      this.prisma.task.count({
-        where: {
-          tenantId: tenant.id,
-          status: 'OPEN',
-          dueAt: { gte: startOfToday, lt: new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000) },
-        },
-      }),
-      this.prisma.deal.aggregate({
-        where: { tenantId: tenant.id },
-        _sum: { amount: true },
-      }),
-    ]);
+    const [contactsCount, dealsCount, tasksDueToday, pipelineAgg, myTasksDueToday, myDealsCount] =
+      await Promise.all([
+        this.prisma.contact.count({ where: { tenantId: tenant.id } }),
+        this.prisma.deal.count({ where: { tenantId: tenant.id } }),
+        this.prisma.task.count({
+          where: {
+            tenantId: tenant.id,
+            status: 'OPEN',
+            dueAt: { gte: startOfToday, lt: endOfToday },
+          },
+        }),
+        this.prisma.deal.aggregate({
+          where: { tenantId: tenant.id },
+          _sum: { amount: true },
+        }),
+        userId != null
+          ? this.prisma.task.count({
+              where: {
+                tenantId: tenant.id,
+                assignedToUserId: userId,
+                status: 'OPEN',
+                dueAt: { gte: startOfToday, lt: endOfToday },
+              },
+            })
+          : 0,
+        userId != null
+          ? this.prisma.deal.count({
+              where: { tenantId: tenant.id, ownerUserId: userId },
+            })
+          : 0,
+      ]);
 
-    return {
+    const pipelineValue = pipelineAgg._sum.amount?.toString() ?? '0';
+    const result: Record<string, unknown> = {
       contactsCount,
       dealsCount,
       tasksDueToday,
-      pipelineValue: pipelineValue._sum.amount?.toString() ?? '0',
+      pipelineValue,
     };
+    if (userId != null) {
+      result.myTasksDueToday = myTasksDueToday;
+      result.myDealsCount = myDealsCount;
+    }
+    return result;
   }
 }

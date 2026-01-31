@@ -27,7 +27,7 @@ export class SubscriptionActiveGuard implements CanActivate {
 
     if (!isActive) {
       const response = context.switchToHttp().getResponse();
-      response.status(HttpStatus.LOCKED).json({
+      response.status(HttpStatus.FORBIDDEN).json({
         code: 'SUBSCRIPTION_EXPIRED',
         message: 'اشتراک منقضی شده است. فقط مشاهده و تمدید امکان‌پذیر است.',
       });

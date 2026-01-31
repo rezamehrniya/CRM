@@ -6,6 +6,11 @@ import { BillingModule } from './billing/billing.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { CompaniesModule } from './companies/companies.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { SettingsModule } from './settings/settings.module';
+import { PipelinesModule } from './pipelines/pipelines.module';
+import { DealsModule } from './deals/deals.module';
+import { TasksModule } from './tasks/tasks.module';
+import { ActivitiesModule } from './activities/activities.module';
 
 @Module({
   imports: [
@@ -16,6 +21,11 @@ import { DashboardModule } from './dashboard/dashboard.module';
     ContactsModule,
     CompaniesModule,
     DashboardModule,
+    SettingsModule,
+    PipelinesModule,
+    DealsModule,
+    TasksModule,
+    ActivitiesModule,
   ],
 })
 export class AppModule {}

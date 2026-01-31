@@ -1,0 +1,50 @@
+# Sakhtar CRM — Backend, Frontend, PostgreSQL
+# Usage: docker compose up -d
+# API روی host: http://localhost:3001  (داخل شبکه داکر backend:3000)  App: http://localhost:8080
+# Postgres روی host: پورت 15432 (اگر 5432/5433 لوکال اشغال است)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sakhtar
+      POSTGRES_PASSWORD: sakhtar_secret
+      POSTGRES_DB: sakhtar_crm
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sakhtar -d sakhtar_crm"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://sakhtar:sakhtar_secret@postgres:5432/sakhtar_crm
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_IN_PRODUCTION_MIN_32_CHARS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3001:3000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

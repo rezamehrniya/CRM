@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Req, Res, UseGuards } from '@nestjs/common
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import type { RequestWithAuth } from './jwt.strategy';
 
 @Controller('t/:tenantSlug/auth')
 export class AuthController {
@@ -29,7 +30,7 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const tenant = (req as any).tenant;
     if (!tenant) return { error: 'Tenant not found' };
-    return this.auth.logout(tenant, res);
+    return this.auth.logout(tenant, req as RequestWithAuth, res);
   }
 
   @Get('me')
@@ -37,7 +38,7 @@ export class AuthController {
   async me(@Req() req: Request) {
     const tenant = (req as any).tenant;
     if (!tenant) return { user: null };
-    return this.auth.me(tenant, req);
+    return this.auth.me(tenant, req as RequestWithAuth);
   }
 
   @Post('demo-session')

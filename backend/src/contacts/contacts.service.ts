@@ -63,6 +63,25 @@ export class ContactsService {
     });
   }
 
+  private readonly IMPORT_MAX = 200;
+
+  async createMany(
+    tenant: TenantContext,
+    items: Array<{ fullName?: string; phone?: string; email?: string }>,
+  ) {
+    const toCreate = items
+      .slice(0, this.IMPORT_MAX)
+      .map((row) => ({
+        tenantId: tenant.id,
+        fullName: (row.fullName ?? '').trim() || '—',
+        phone: (row.phone ?? '').trim() || null,
+        email: (row.email ?? '').trim() || null,
+      }));
+    if (toCreate.length === 0) return { created: 0 };
+    const result = await this.prisma.contact.createMany({ data: toCreate });
+    return { created: result.count };
+  }
+
   async update(tenant: TenantContext, id: string, body: Partial<{ fullName: string; phone: string; email: string; companyId: string; ownerUserId: string }>) {
     const existing = await this.prisma.contact.findFirst({ where: { id, tenantId: tenant.id } });
     if (!existing) throw new NotFoundException();

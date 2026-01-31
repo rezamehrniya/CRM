@@ -35,6 +35,15 @@ export class ContactsController {
     return this.contacts.create(tenant, body);
   }
 
+  @Post('import')
+  @UseGuards(SubscriptionActiveGuard)
+  async import(@Req() req: Request, @Body() body: { items?: Array<{ fullName?: string; phone?: string; email?: string }> }) {
+    const tenant = (req as any).tenant;
+    if (!tenant) throw new Error('Tenant not found');
+    const items = Array.isArray(body?.items) ? body.items : [];
+    return this.contacts.createMany(tenant, items);
+  }
+
   @Patch(':id')
   @UseGuards(SubscriptionActiveGuard)
   async update(@Req() req: Request, @Param('id') id: string, @Body() body: any) {

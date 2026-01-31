@@ -1,15 +1,26 @@
+/**
+ * داشبورد فروش — خلاصهٔ عملکرد امروز + ریسک‌ها.
+ * برای فروشنده (MEMBER): کارهای امروز من، معاملات من (SAK-016).
+ * طراحی: Aurora/Glass، خوانایی در حالت داده / خطا / بارگذاری / خالی.
+ */
 import { useState, useEffect } from 'react';
-import { apiGet } from '../lib/api';
-import { KPICard } from '../components/ui/glass';
+import { Users, HandCoins, Banknote, CheckSquare, UserCheck, Briefcase } from 'lucide-react';
+import { apiGet } from '@/lib/api';
+import { useAuth } from '@/contexts/auth-context';
+import { PageBreadcrumb } from '@/components/PageBreadcrumb';
+import { DashboardErrorBanner, DashboardCard } from '@/components/dashboard';
 
 type Kpis = {
   contactsCount: number;
   dealsCount: number;
   tasksDueToday: number;
   pipelineValue: string;
+  myTasksDueToday?: number;
+  myDealsCount?: number;
 };
 
 export default function Dashboard() {
+  const { role } = useAuth();
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,37 +28,73 @@ export default function Dashboard() {
   useEffect(() => {
     apiGet<Kpis>('/dashboard')
       .then(setKpis)
-      .catch((e) => setError(e.message))
+      .catch((e) => setError(e?.message ?? 'خطا'))
       .finally(() => setLoading(false));
   }, []);
 
-  const cards = kpis
-    ? [
-        { title: 'مخاطبین', value: String(kpis.contactsCount) },
-        { title: 'معاملات', value: String(kpis.dealsCount) },
-        { title: 'ارزش پایپلاین', value: kpis.pipelineValue },
-        { title: 'کارهای امروز', value: String(kpis.tasksDueToday) },
-      ]
-    : [
-        { title: 'مخاطبین', value: '—' },
-        { title: 'معاملات', value: '—' },
-        { title: 'ارزش پایپلاین', value: '—' },
-        { title: 'کارهای امروز', value: '—' },
-      ];
+  const hasError = Boolean(error);
+  const showLoading = loading && !kpis;
+  const isSeller = role === 'MEMBER';
+  const showMyKpis = isSeller && (kpis?.myTasksDueToday !== undefined || kpis?.myDealsCount !== undefined);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      <PageBreadcrumb current="داشبورد" />
       <h1 className="text-title-lg font-title">داشبورد</h1>
-      {error && (
-        <div className="rounded-card border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
+
+      {hasError && (
+        <DashboardErrorBanner />
+      )}
+
+      {showMyKpis && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          <DashboardCard
+            title="کارهای امروز من"
+            icon={UserCheck}
+            value={kpis?.myTasksDueToday ?? 0}
+            loading={showLoading}
+            emptyMessage="هیچ کاری برای امروز ندارید"
+          />
+          <DashboardCard
+            title="معاملات من"
+            icon={Briefcase}
+            value={kpis?.myDealsCount ?? 0}
+            loading={showLoading}
+            emptyMessage="هیچ معامله‌ای به شما اختصاص نیست"
+          />
         </div>
       )}
-      {loading && <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-        {cards.map((card) => (
-          <KPICard key={card.title} title={card.title} value={card.value} />
-        ))}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+        <DashboardCard
+          title="مخاطبین"
+          icon={Users}
+          value={kpis?.contactsCount}
+          loading={showLoading}
+          emptyMessage="—"
+        />
+        <DashboardCard
+          title="معاملات"
+          icon={HandCoins}
+          value={kpis?.dealsCount}
+          loading={showLoading}
+          emptyMessage="هیچ معامله‌ای ثبت نشده"
+        />
+        <DashboardCard
+          title="ارزش پایپلاین"
+          icon={Banknote}
+          value={kpis?.pipelineValue}
+          loading={showLoading}
+          emptyMessage="—"
+          suffixToman
+        />
+        <DashboardCard
+          title="کارهای امروز"
+          icon={CheckSquare}
+          value={kpis?.tasksDueToday}
+          loading={showLoading}
+          emptyMessage="هیچ کاری ثبت نیست"
+        />
       </div>
     </div>
   );

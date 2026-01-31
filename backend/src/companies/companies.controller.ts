@@ -35,6 +35,15 @@ export class CompaniesController {
     return this.companies.create(tenant, body);
   }
 
+  @Post('import')
+  @UseGuards(SubscriptionActiveGuard)
+  async import(@Req() req: Request, @Body() body: { items?: Array<{ name?: string; phone?: string; website?: string }> }) {
+    const tenant = (req as any).tenant;
+    if (!tenant) throw new Error('Tenant not found');
+    const items = Array.isArray(body?.items) ? body.items : [];
+    return this.companies.createMany(tenant, items);
+  }
+
   @Patch(':id')
   @UseGuards(SubscriptionActiveGuard)
   async update(@Req() req: Request, @Param('id') id: string, @Body() body: any) {

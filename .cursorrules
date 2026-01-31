@@ -1,0 +1,18 @@
+# Sakhtar CRM — Cursor Rules
+
+## Source of Truth
+1. docs/specs/ — contract (API, data model, security). Must comply.
+2. docs/design/ — UI standards (Aurora/glass, sidebar, DataTable, Jalali).
+3. docs/tasks/ — backlog, DoD, acceptance criteria.
+4. READMEs — setup only; not authority for "what is correct".
+
+## Mandatory: Anti-Leak Policy (no exceptions)
+- Every operational endpoint MUST be under /api/t/:tenantSlug/...
+- JwtAuthGuard MUST return 403 TENANT_MISMATCH when token.tid !== req.tenant.id.
+- All DB reads: where: { tenantId }. All creates: inject tenantId from server only. Update/delete: findFirst({ id, tenantId }) then 404 if not found.
+
+## Change Workflow (OpenSpec)
+Follow: proposal → specs → design → tasks → implementation → QA. Do not start implementation before spec/design/tasks are updated. See docs/CURSOR-WORKFLOW.md for the full prompt and spine docs.
+
+## Spine Docs (locked)
+docs/specs/BILLING-SEATS.md, TENANCY-ISOLATION.md, AUTH.md, API-CONTRACT.md, ENGINEERING-STANDARDS.md; docs/design/UI-STANDARDS.md; docs/tasks/SPRINT-0.md. Any change touching API, data, security or UI must align with these. Every PR must satisfy the PR checklist (see .github/PULL_REQUEST_TEMPLATE.md) and pass CI (lint/typecheck/test/build).

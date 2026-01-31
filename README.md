@@ -22,26 +22,51 @@ CRM چندمستاجری با برند Sakhtar — دامنه: **crm.sakhtar.net
 
 ## پیش‌نیازها
 
-- Node.js 18+
-- PostgreSQL
+- **Node.js 18+** (ترجیحاً 20)
+- **PostgreSQL** (برای راه‌اندازی بدون داکر)
+- یا **Docker / Docker Compose** (برای راه‌اندازی همه‌چیز با داکر)
 
-## راه‌اندازی
+---
 
-### Backend
+## راه‌اندازی لوکال (بدون داکر)
+
+### ۱. دیتابیس
+
+PostgreSQL را روشن کنید و یک دیتابیس بسازید:
+
+```bash
+# مثال با psql
+psql -U postgres -c "CREATE DATABASE sakhtar_crm;"
+```
+
+### ۲. Backend
 
 ```bash
 cd backend
-copy .env.example .env
-# تنظیم DATABASE_URL و JWT_SECRET در .env
+copy .env.example .env   # در ویندوز
+# یا: cp .env.example .env   # در لینوکس/مک
+```
+
+فایل **`.env`** را باز کنید و مقدارها را تنظیم کنید:
+
+- `DATABASE_URL` — مثلاً: `postgresql://postgres:YOUR_PASSWORD@localhost:5432/sakhtar_crm`
+- `JWT_SECRET` — حداقل ۳۲ کاراکتر (برای production حتماً عوض کنید)
+- `PORT` — پیش‌فرض 3000
+
+سپس:
+
+```bash
 npm install
 npx prisma generate
-npx prisma migrate dev
+npx prisma migrate dev    # ساخت/اعمال migrationها
 npm run start:dev
 ```
 
-API روی `http://localhost:3000` با prefix `/api`.
+API روی **http://localhost:3000** با prefix **/api** در دسترس است.
 
-### Frontend
+### ۳. Frontend
+
+در یک ترمینال دیگر:
 
 ```bash
 cd frontend
@@ -49,7 +74,72 @@ npm install
 npm run dev
 ```
 
-اپ روی `http://localhost:5173`. مسیر دمو: `http://localhost:5173/t/demo/app`
+اپ روی **http://localhost:5173** بالا می‌آید. مسیر پیش‌فرض اپ: **http://localhost:5173/t/demo/app** (صفحهٔ لاگین/داشبورد).
+
+### ۴. (اختیاری) ساخت tenant و کاربر دمو
+
+اگر دیتابیس خالی است، برای تست لاگین باید یک tenant (مثلاً با slug `demo`) و یک کاربر با پسورد بسازید. می‌توانید از Prisma Studio استفاده کنید:
+
+```bash
+cd backend
+npx prisma studio
+```
+
+در Prisma Studio جداول `Tenant`, `User`, `Membership` را پر کنید؛ پسورد کاربر را با bcrypt/bcryptjs هش کنید و در `User.passwordHash` ذخیره کنید.
+
+**یا با اسکریپت seed (سریع):**
+
+```bash
+cd backend
+npx prisma db seed
+```
+
+این دستور tenant با slug `demo`، کاربر `owner@demo.com` با رمز `12345678` و Membership با نقش OWNER می‌سازد. بعد از آن می‌توانی با این کاربر در `/t/demo/app` لاگین کنی.
+
+---
+
+## راه‌اندازی با Docker
+
+همه‌چیز (PostgreSQL + Backend + Frontend) در کانتینر:
+
+```bash
+# از روت پروژه
+cp .env.docker.example .env
+docker compose build
+docker compose up -d
+```
+
+- **اپ:** http://localhost:8080 (مثلاً http://localhost:8080/t/demo/app)
+- **API:** http://localhost:3000/api
+
+قبل از اولین بار، یک بار migrationها را با اتصال به همین دیتابیس اجرا کنید (مثلاً بعد از `docker compose up`، از روی ماشین خودتان):
+
+```bash
+cd backend
+# در .env مقدار DATABASE_URL را بگذارید: postgresql://sakhtar:sakhtar_secret@localhost:5432/sakhtar_crm
+npx prisma migrate dev
+```
+
+بعد از آن، با هر بار `docker compose up` backend خودش `prisma migrate deploy` را اجرا می‌کند.
+
+اسکریپت‌های روت برای داکر: `npm run docker:build`, `npm run docker:up`, `npm run docker:down`, `npm run docker:logs`.
+
+**اگر بیلد روی «resolving provenance» گیر کرد (ویندوز/WSL):** BuildKit گاهی روی ویندوز در این مرحله طول می‌کشد یا گیر می‌کند. می‌توانی بیلد را با بیلدر قدیمی بدون attestation انجام بدهی:
+
+```bash
+# لینوکس/مک/WSL
+DOCKER_BUILDKIT=0 docker compose build
+```
+
+در **PowerShell (ویندوز)**:
+
+```powershell
+$env:DOCKER_BUILDKIT=0; docker compose build
+```
+
+بعد از بیلد، `docker compose up -d` را مثل قبل اجرا کن.
+
+---
 
 ## مسیرها
 

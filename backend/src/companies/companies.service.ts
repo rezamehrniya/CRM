@@ -43,7 +43,19 @@ export class CompaniesService {
   async getOne(tenant: TenantContext, id: string) {
     return this.prisma.company.findFirst({
       where: { id, tenantId: tenant.id },
-      select: { ...companySelect, tenantId: true },
+      select: {
+        ...companySelect,
+        tenantId: true,
+        contacts: { select: { id: true, fullName: true, phone: true, email: true } },
+        deals: {
+          select: {
+            id: true,
+            title: true,
+            amount: true,
+            stage: { select: { name: true } },
+          },
+        },
+      },
     });
   }
 
@@ -57,6 +69,25 @@ export class CompaniesService {
       },
       select: companySelect,
     });
+  }
+
+  private readonly IMPORT_MAX = 200;
+
+  async createMany(
+    tenant: TenantContext,
+    items: Array<{ name?: string; phone?: string; website?: string }>,
+  ) {
+    const toCreate = items
+      .slice(0, this.IMPORT_MAX)
+      .map((row) => ({
+        tenantId: tenant.id,
+        name: (row.name ?? '').trim() || '—',
+        phone: (row.phone ?? '').trim() || null,
+        website: (row.website ?? '').trim() || null,
+      }));
+    if (toCreate.length === 0) return { created: 0 };
+    const result = await this.prisma.company.createMany({ data: toCreate });
+    return { created: result.count };
   }
 
   async update(tenant: TenantContext, id: string, body: Partial<{ name: string; phone: string; website: string }>) {

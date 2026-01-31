@@ -35,10 +35,10 @@ export function KPICard({
   );
 }
 
-/** کلاس آیتم سایدبار با حالت active (pill بنفش) */
+/** کلاس آیتم سایدبار: hover از --bg-muted (پالت Primer)؛ active از sidebar-active. */
 export function sidebarItemClassName(active: boolean) {
   const base =
     'flex items-center h-11 gap-3 pe-3 ps-3 rounded-xl transition-colors ' +
-    'hover:bg-white/5 text-foreground';
+    'hover:bg-[var(--bg-muted)] text-foreground';
   return active ? `${base} sidebar-active` : base;
 }
