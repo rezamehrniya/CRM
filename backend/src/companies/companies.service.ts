@@ -46,7 +46,7 @@ export class CompaniesService {
       select: {
         ...companySelect,
         tenantId: true,
-        contacts: { select: { id: true, fullName: true, phone: true, email: true } },
+        contacts: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
         deals: {
           select: {
             id: true,

@@ -4,7 +4,8 @@ import { TenantContext } from '../tenant/tenant.middleware';
 
 const contactSelect = {
   id: true,
-  fullName: true,
+  firstName: true,
+  lastName: true,
   phone: true,
   email: true,
   companyId: true,
@@ -24,7 +25,8 @@ export class ContactsService {
     if (query?.q?.trim()) {
       const q = query.q.trim();
       where.OR = [
-        { fullName: { contains: q, mode: 'insensitive' } },
+        { firstName: { contains: q, mode: 'insensitive' } },
+        { lastName: { contains: q, mode: 'insensitive' } },
         { email: { contains: q, mode: 'insensitive' } },
         { phone: { contains: q } },
       ];
@@ -49,11 +51,12 @@ export class ContactsService {
     });
   }
 
-  async create(tenant: TenantContext, body: { fullName: string; phone?: string; email?: string; companyId?: string; ownerUserId?: string }) {
+  async create(tenant: TenantContext, body: { firstName: string; lastName: string; phone?: string; email?: string; companyId?: string; ownerUserId?: string }) {
     return this.prisma.contact.create({
       data: {
         tenantId: tenant.id,
-        fullName: body.fullName?.trim() ?? '',
+        firstName: body.firstName?.trim() ?? '',
+        lastName: body.lastName?.trim() ?? '',
         phone: body.phone?.trim() || null,
         email: body.email?.trim() || null,
         companyId: body.companyId || null,
@@ -67,26 +70,37 @@ export class ContactsService {
 
   async createMany(
     tenant: TenantContext,
-    items: Array<{ fullName?: string; phone?: string; email?: string }>,
+    items: Array<{ firstName?: string; lastName?: string; fullName?: string; phone?: string; email?: string }>,
   ) {
-    const toCreate = items
-      .slice(0, this.IMPORT_MAX)
-      .map((row) => ({
+    const toCreate = items.slice(0, this.IMPORT_MAX).map((row) => {
+      let firstName = (row.firstName ?? '').trim();
+      let lastName = (row.lastName ?? '').trim();
+      if ((!firstName && !lastName) && (row.fullName ?? '').trim()) {
+        const full = (row.fullName ?? '').trim();
+        const space = full.indexOf(' ');
+        firstName = space >= 0 ? full.slice(0, space) : full;
+        lastName = space >= 0 ? full.slice(space + 1).trim() : '';
+      }
+      if (!firstName) firstName = '—';
+      return {
         tenantId: tenant.id,
-        fullName: (row.fullName ?? '').trim() || '—',
+        firstName,
+        lastName: lastName || '—',
         phone: (row.phone ?? '').trim() || null,
         email: (row.email ?? '').trim() || null,
-      }));
+      };
+    });
     if (toCreate.length === 0) return { created: 0 };
     const result = await this.prisma.contact.createMany({ data: toCreate });
     return { created: result.count };
   }
 
-  async update(tenant: TenantContext, id: string, body: Partial<{ fullName: string; phone: string; email: string; companyId: string; ownerUserId: string }>) {
+  async update(tenant: TenantContext, id: string, body: Partial<{ firstName: string; lastName: string; phone: string; email: string; companyId: string; ownerUserId: string }>) {
     const existing = await this.prisma.contact.findFirst({ where: { id, tenantId: tenant.id } });
     if (!existing) throw new NotFoundException();
     const data: any = {};
-    if (body.fullName !== undefined) data.fullName = body.fullName.trim();
+    if (body.firstName !== undefined) data.firstName = body.firstName.trim();
+    if (body.lastName !== undefined) data.lastName = body.lastName.trim();
     if (body.phone !== undefined) data.phone = body.phone?.trim() || null;
     if (body.email !== undefined) data.email = body.email?.trim() || null;
     if (body.companyId !== undefined) data.companyId = body.companyId || null;

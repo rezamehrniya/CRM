@@ -1,14 +1,87 @@
 /**
- * فونت با نام FaNum برای نمایش اعداد فارسی (۰–۹).
- * از Vazirmatn با نام «Vazirmatn FaNum» استفاده می‌شود تا در پروژه پیدا شود.
+ * فونت‌های پروژه از پوشهٔ FONTS (public/FONTS).
+ * Peyda: متن عمومی — PeydaWeb-*
+ * Peyda FaNum: اعداد فارسی (۰–۹) — PeydaFaNumWeb-*
  */
-@import '@fontsource/vazirmatn/400.css';
 
-/* همان فونت با نام حاوی FaNum برای استفاده در کلاس .fa-num */
+/* ——— Peyda (متن عمومی) ——— */
 @font-face {
-  font-family: 'Vazirmatn FaNum';
-  src: url('https://cdn.jsdelivr.net/npm/@fontsource/vazirmatn@5.0.8/files/vazirmatn-arabic-400-normal.woff2') format('woff2');
+  font-family: 'Peyda';
+  src: url('/FONTS/PeydaWeb-Regular.woff2') format('woff2');
   font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peyda';
+  src: url('/FONTS/PeydaWeb-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peyda';
+  src: url('/FONTS/PeydaWeb-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peyda';
+  src: url('/FONTS/PeydaWeb-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peyda';
+  src: url('/FONTS/PeydaWeb-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ——— Peyda FaNum (اعداد فارسی، کلاس .fa-num) ——— */
+@font-face {
+  font-family: 'Peyda FaNum';
+  src: url('/FONTS/PeydaFaNumWeb-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peyda FaNum';
+  src: url('/FONTS/PeydaFaNumWeb-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peyda FaNum';
+  src: url('/FONTS/PeydaFaNumWeb-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peyda FaNum';
+  src: url('/FONTS/PeydaFaNumWeb-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peyda FaNum';
+  src: url('/FONTS/PeydaFaNumWeb-Black.woff2') format('woff2');
+  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 
 type PipelineStage = { id: string; name: string; order: number };
 type Pipeline = { id: string; name: string; isDefault?: boolean; stages: PipelineStage[] };
@@ -22,7 +23,7 @@ type Deal = {
   amount?: unknown;
   stage?: { id: string; name: string };
   pipeline?: { id: string; name: string };
-  contact?: { id: string; fullName: string } | null;
+  contact?: { id: string; firstName: string; lastName: string } | null;
   company?: { id: string; name: string } | null;
 };
 
@@ -148,7 +149,7 @@ export default function Deals() {
             onChange={(e) => setQ(e.target.value)}
             className="w-48 bg-card"
           />
-          <Button type="button" onClick={handleCreate} disabled={pipelines.length === 0}>
+          <Button type="button" onClick={handleCreate} disabled={pipelines.length === 0} className="whitespace-nowrap">
             معامله جدید
           </Button>
         </div>
@@ -161,8 +162,8 @@ export default function Deals() {
       )}
 
       {loading && (
-        <div className="glass-table-surface overflow-hidden rounded-card">
-          <table className="w-full">
+        <div className="glass-table-surface overflow-x-auto rounded-card">
+          <table className="w-full min-w-[500px]">
             <thead>
               <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
                 <th className="text-start pe-4 ps-4 font-medium">عنوان</th>
@@ -187,8 +188,8 @@ export default function Deals() {
 
       {!loading && data && (
         <>
-          <div className="glass-table-surface overflow-hidden rounded-card">
-            <table className="w-full">
+          <div className="glass-table-surface overflow-x-auto rounded-card">
+            <table className="w-full min-w-[500px]">
               <thead>
                 <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
                   <th className="text-start pe-4 ps-4 font-medium">عنوان</th>
@@ -214,14 +215,15 @@ export default function Deals() {
                     </td>
                     <td className="pe-4 ps-4">{d.stage?.name ?? '—'}</td>
                     <td className="pe-4 ps-4 fa-num">{formatAmount(d.amount)}</td>
-                    <td className="pe-4 ps-4">
-                      <Link to={`${base}/deals/${d.id}`} className="text-sm text-muted-foreground hover:text-foreground ml-2">
-                        مشاهده
+                    <td className="pe-4 ps-4 flex items-center gap-1">
+                      <Link to={`${base}/deals/${d.id}`} className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--bg-muted)]" aria-label="مشاهده" title="مشاهده">
+                        <Eye className="size-4" />
                       </Link>
                       <Button
                         type="button"
-                        variant="link"
-                        size="sm"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setDrawer(d);
                           setFormOpen(true);
@@ -232,8 +234,10 @@ export default function Deals() {
                             pipelineId: d.pipeline?.id ?? '',
                           });
                         }}
+                        aria-label="ویرایش"
+                        title="ویرایش"
                       >
-                        ویرایش
+                        <Pencil className="size-4" />
                       </Button>
                     </td>
                   </tr>
@@ -317,7 +321,8 @@ export default function Deals() {
             </div>
             <div className="flex gap-2 mt-4 justify-end">
               {drawer && (
-                <Button type="button" variant="destructive" onClick={() => handleDelete(drawer.id)} disabled={saving}>
+                <Button type="button" variant="destructive" onClick={() => handleDelete(drawer.id)} disabled={saving} aria-label="حذف" title="حذف" className="gap-2">
+                  <Trash2 className="size-4" />
                   حذف
                 </Button>
               )}
@@ -327,6 +332,7 @@ export default function Deals() {
               </Button>
             </div>
           </div>
+        </div>
         </div>
       )}
     </div>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api';
-import { formatFaNum } from '../lib/numbers';
+import { formatFaNum, digitsToFa } from '../lib/numbers';
 import { PageBreadcrumb } from '../components/PageBreadcrumb';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -11,7 +12,8 @@ import { Skeleton } from '../components/ui/skeleton';
 
 type Contact = {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   phone?: string | null;
   email?: string | null;
   companyId?: string | null;
@@ -28,7 +30,7 @@ export default function Contacts() {
   const [q, setQ] = useState('');
   const [drawer, setDrawer] = useState<Contact | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState({ fullName: '', phone: '', email: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '' });
   const [saving, setSaving] = useState(false);
 
   const pageSize = 25;
@@ -54,18 +56,18 @@ export default function Contacts() {
 
   const handleCreate = () => {
     setDrawer(null);
-    setForm({ fullName: '', phone: '', email: '' });
+    setForm({ firstName: '', lastName: '', phone: '', email: '' });
     setFormOpen(true);
   };
 
   const closeForm = () => {
     setDrawer(null);
     setFormOpen(false);
-    setForm({ fullName: '', phone: '', email: '' });
+    setForm({ firstName: '', lastName: '', phone: '', email: '' });
   };
 
   const handleSave = async () => {
-    if (!form.fullName.trim()) return;
+    if (!form.firstName.trim() && !form.lastName.trim()) return;
     setSaving(true);
     try {
       if (drawer) {
@@ -73,7 +75,7 @@ export default function Contacts() {
         closeForm();
       } else {
         await apiPost('/contacts', form);
-        setForm({ fullName: '', phone: '', email: '' });
+        setForm({ firstName: '', lastName: '', phone: '', email: '' });
         setFormOpen(false);
       }
       refetch();
@@ -111,7 +113,7 @@ export default function Contacts() {
             onChange={(e) => setQ(e.target.value)}
             className="w-48 bg-card"
           />
-          <Button type="button" onClick={handleCreate}>
+          <Button type="button" onClick={handleCreate} className="whitespace-nowrap">
             مخاطب جدید
           </Button>
         </div>
@@ -124,11 +126,12 @@ export default function Contacts() {
       )}
 
       {loading && (
-        <div className="glass-table-surface overflow-hidden rounded-card">
-          <table className="w-full">
+        <div className="glass-table-surface overflow-x-auto rounded-card">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
                 <th className="text-start pe-4 ps-4 font-medium">نام</th>
+                <th className="text-start pe-4 ps-4 font-medium">نام خانوادگی</th>
                 <th className="text-start pe-4 ps-4 font-medium">تلفن</th>
                 <th className="text-start pe-4 ps-4 font-medium">ایمیل</th>
                 <th className="text-start pe-4 ps-4 w-20">عملیات</th>
@@ -137,7 +140,8 @@ export default function Contacts() {
             <tbody>
               {[1, 2, 3, 4, 5].map((i) => (
                 <tr key={i} className="border-b border-[var(--border-default)] h-12">
-                  <td className="pe-4 ps-4"><Skeleton className="h-4 w-36" /></td>
+                  <td className="pe-4 ps-4"><Skeleton className="h-4 w-24" /></td>
+                  <td className="pe-4 ps-4"><Skeleton className="h-4 w-24" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-28" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-40" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-8 w-16" /></td>
@@ -149,11 +153,12 @@ export default function Contacts() {
       )}
       {!loading && data && (
         <>
-          <div className="glass-table-surface overflow-hidden">
-            <table className="w-full">
+          <div className="glass-table-surface overflow-x-auto rounded-card">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
                   <th className="text-start pe-4 ps-4 font-medium">نام</th>
+                  <th className="text-start pe-4 ps-4 font-medium">نام خانوادگی</th>
                   <th className="text-start pe-4 ps-4 font-medium">تلفن</th>
                   <th className="text-start pe-4 ps-4 font-medium">ایمیل</th>
                   <th className="text-start pe-4 ps-4 w-20">عملیات</th>
@@ -162,7 +167,7 @@ export default function Contacts() {
               <tbody>
                 {data.data.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={5} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
                       مخاطبی یافت نشد.
                     </td>
                   </tr>
@@ -174,21 +179,22 @@ export default function Contacts() {
                   >
                     <td className="pe-4 ps-4">
                       <Link to={`${base}/contacts/${c.id}`} className="font-medium text-primary hover:underline">
-                        {c.fullName}
+                        {c.firstName || '—'}
                       </Link>
                     </td>
-                    <td className="pe-4 ps-4">{c.phone ?? '—'}</td>
+                    <td className="pe-4 ps-4">{c.lastName || '—'}</td>
+                    <td className="pe-4 ps-4 fa-num">{digitsToFa(c.phone ?? '')}</td>
                     <td className="pe-4 ps-4">{c.email ?? '—'}</td>
-                    <td className="pe-4 ps-4">
-                      <Link to={`${base}/contacts/${c.id}`} className="text-sm text-muted-foreground hover:text-foreground ml-2">
-                        مشاهده
+                    <td className="pe-4 ps-4 flex items-center gap-1">
+                      <Link to={`${base}/contacts/${c.id}`} className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--bg-muted)]" aria-label="مشاهده" title="مشاهده">
+                        <Eye className="size-4" />
                       </Link>
-                      <Button type="button" variant="link" size="sm" onClick={() => {
+                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => {
                         setDrawer(c);
                         setFormOpen(true);
-                        setForm({ fullName: c.fullName, phone: c.phone ?? '', email: c.email ?? '' });
-                      }}>
-                        ویرایش
+                        setForm({ firstName: c.firstName, lastName: c.lastName, phone: c.phone ?? '', email: c.email ?? '' });
+                      }} aria-label="ویرایش" title="ویرایش">
+                        <Pencil className="size-4" />
                       </Button>
                     </td>
                   </tr>
@@ -230,13 +236,24 @@ export default function Contacts() {
             <h2 id="contact-form-title" className="text-lg font-semibold mb-4">{drawer ? 'ویرایش مخاطب' : 'مخاطب جدید'}</h2>
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="contact-fullName">نام کامل</Label>
+                <Label htmlFor="contact-firstName">نام</Label>
                 <Input
-                  id="contact-fullName"
+                  id="contact-firstName"
                   type="text"
-                  placeholder="نام کامل"
-                  value={form.fullName}
-                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                  placeholder="نام"
+                  value={form.firstName}
+                  onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                  className="bg-card"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contact-lastName">نام خانوادگی</Label>
+                <Input
+                  id="contact-lastName"
+                  type="text"
+                  placeholder="نام خانوادگی"
+                  value={form.lastName}
+                  onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
                   className="bg-card"
                 />
               </div>
@@ -265,14 +282,15 @@ export default function Contacts() {
             </div>
             <div className="flex gap-2 mt-4 justify-end">
               {drawer && (
-                <Button type="button" variant="destructive" onClick={() => handleDelete(drawer.id)} disabled={saving}>
+                <Button type="button" variant="destructive" onClick={() => handleDelete(drawer.id)} disabled={saving} aria-label="حذف" title="حذف" className="gap-2">
+                  <Trash2 className="size-4" />
                   حذف
                 </Button>
               )}
               <Button type="button" variant="outline" onClick={closeForm}>
                 انصراف
               </Button>
-              <Button type="button" onClick={handleSave} disabled={saving || !form.fullName.trim()}>
+              <Button type="button" onClick={handleSave} disabled={saving || (!form.firstName.trim() && !form.lastName.trim())}>
                 {saving ? 'در حال ذخیره...' : 'ذخیره'}
               </Button>
             </div>

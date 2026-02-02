@@ -1,17 +1,13 @@
 import * as React from 'react';
-import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Moon, Sun } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
 import { setAccessToken } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const DEMO_EMAIL = 'owner@demo.com';
 const DEMO_PASSWORD = '12345678';
@@ -136,208 +132,101 @@ export default function LoginPage() {
   }
 
   return (
-    <div className={cn('min-h-screen bg-background text-foreground px-4 py-10 aurora-bg')}>
-      <div className="mx-auto flex w-full max-w-md items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl" />
-          <div className="leading-tight">
-            <div className="text-sm font-semibold">Sakhtar CRM</div>
-            <div className="text-xs text-muted-foreground">
-              {tenantSlug === 'demo' ? 'پنل مدیر فروش' : tenantSlug ? `سازمان: ${tenantSlug}` : 'ورود'}
-            </div>
-          </div>
+    <div className="min-h-screen bg-[var(--bg-default)] text-foreground flex flex-col items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <img src="/sakhtarlogo.png" alt="" className="h-10 w-10 object-contain shrink-0" />
+          <span className="text-xl font-semibold text-foreground">ساختار</span>
         </div>
 
-        <ThemeToggle />
-      </div>
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-default)] p-5 shadow-sm">
+          {autoLoginPending ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
+              <Loader2 className="size-8 animate-spin" aria-hidden />
+              <p className="text-sm">در حال ورود...</p>
+            </div>
+          ) : (
+            <>
+              {error && (
+                <p className="text-xs text-destructive mb-3 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
+                  {error}
+                </p>
+              )}
 
-      <div className="mx-auto mt-6 w-full max-w-md">
-        <Card
-          className={cn(
-            'rounded-3xl border border-border/40 bg-card/60 dark:bg-card/40 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.35)]'
-          )}
-        >
-          <CardHeader className="space-y-2">
-            <CardTitle className="text-lg">ورود به پنل</CardTitle>
-            <CardDescription className="text-xs">
-              موبایل یا ایمیل سازمانی‌تان را وارد کنید. (RTL + تاریخ شمسی در کل سیستم فعال است)
-            </CardDescription>
-          </CardHeader>
+              {tenantSlug === 'demo' && (
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground mb-3 underline"
+                  onClick={() => {
+                    setIdentifier(DEMO_EMAIL);
+                    setPassword(DEMO_PASSWORD);
+                    setError(null);
+                  }}
+                >
+                  استفاده از دمو (owner@demo.com)
+                </button>
+              )}
 
-          <CardContent>
-            {autoLoginPending ? (
-              <div className="flex flex-col items-center justify-center py-10 gap-3 text-muted-foreground">
-                <Loader2 className="size-10 animate-spin" aria-hidden />
-                <p className="text-sm font-medium">در حال ورود به پنل مدیر فروش...</p>
-              </div>
-            ) : (
-              <>
-                {error ? (
-                  <Alert className="mb-4 border-destructive/40 bg-destructive/5">
-                    <AlertDescription className="text-sm">{error}</AlertDescription>
-                  </Alert>
-                ) : null}
-
-                {tenantSlug === 'demo' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mb-4"
-                    onClick={() => {
-                      setIdentifier(DEMO_EMAIL);
-                      setPassword(DEMO_PASSWORD);
-                      setError(null);
-                    }}
-                  >
-                    پر کردن فرم با اطلاعات پنل مدیر فروش
-                  </Button>
-                )}
-
-                <form onSubmit={onSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="identifier">موبایل یا ایمیل</Label>
-                <Input
-                  id="identifier"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="مثلاً 0912xxxxxxx یا name@company.com"
-                  autoComplete="username"
-                  className={cn('h-11 rounded-2xl bg-background/40 dark:bg-background/20 border-border/50')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">رمز عبور</Label>
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-                    disabled
-                    title="در MVP فعال می‌شود"
-                  >
-                    فراموشی رمز عبور
-                  </Button>
-                </div>
-
-                <div className="relative">
+              <form onSubmit={onSubmit} className="space-y-3">
+                <div>
+                  <Label htmlFor="identifier" className="text-xs">موبایل یا ایمیل</Label>
                   <Input
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="رمز عبور"
-                    autoComplete="current-password"
-                    className={cn('h-11 rounded-2xl pe-11 bg-background/40 dark:bg-background/20 border-border/50')}
+                    id="identifier"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="موبایل یا ایمیل"
+                    autoComplete="username"
+                    className="mt-1 h-10 rounded-lg text-left border-2 border-[#94A3B8] dark:border-[#475569] bg-[var(--bg-default)] focus-visible:border-[#64748B] dark:focus-visible:border-[#64748B]"
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute inset-y-0 start-2 my-auto h-9 w-9 rounded-xl"
-                    onClick={() => setShowPassword((s) => !s)}
-                    aria-label={showPassword ? 'پنهان کردن رمز' : 'نمایش رمز'}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={remember} onCheckedChange={(v) => setRemember(Boolean(v))} />
+                <div>
+                  <Label htmlFor="password" className="text-xs">رمز عبور</Label>
+                  <div className="relative mt-1">
+                    <Input
+                      id="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="رمز عبور"
+                      autoComplete="current-password"
+                      className="h-10 rounded-lg ps-10 text-left border-2 border-[#94A3B8] dark:border-[#475569] bg-[var(--bg-default)] focus-visible:border-[#64748B] dark:focus-visible:border-[#64748B]"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 start-0 flex items-center justify-center w-10 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword((s) => !s)}
+                      aria-label={showPassword ? 'پنهان کردن رمز' : 'نمایش رمز'}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs cursor-pointer text-muted-foreground">
+                  <Checkbox checked={remember} onCheckedChange={(v) => setRemember(Boolean(v))} className="size-3.5" />
                   مرا به خاطر بسپار
                 </label>
 
-                <Link
-                  to={tenantSlug ? `/t/${tenantSlug}/app/settings/billing` : '/'}
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                <Button
+                  type="submit"
+                  className="h-10 w-full rounded-lg font-medium"
+                  disabled={loading}
                 >
-                  وضعیت اشتراک
-                </Link>
-              </div>
-
-              <Button
-                type="submit"
-                className={cn(
-                  'h-11 w-full rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_16px_40px_hsla(var(--primary)/0.25)]'
-                )}
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    در حال ورود...
-                  </span>
-                ) : (
-                  'ورود'
-                )}
-              </Button>
-
-              <div className="pt-2">
-                <Separator className="bg-border/50" />
-              </div>
-
-              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                <div className="flex items-center justify-between">
-                  <span>پنل مدیر فروش (دمو) — فقط برای مشاهده.</span>
-                  <Link to="/t/demo/app" className="hover:text-foreground">
-                    مشاهده پنل مدیر فروش
-                  </Link>
-                </div>
-                {tenantSlug === 'demo' && (
-                  <p className="text-[11px] opacity-80">
-                    دمو = پنل مدیر فروش. اگر ورود خودکار کار نکرد، در پوشهٔ backend دستور <code className="bg-muted px-1 rounded">npx prisma db seed</code> را اجرا کنید.
-                  </p>
-                )}
-              </div>
-            </form>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="mt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Sakhtar — CRM
+                  {loading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      ورود...
+                    </span>
+                  ) : (
+                    'ورود'
+                  )}
+                </Button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>
-  );
-}
-
-function ThemeToggle() {
-  const [mounted, setMounted] = React.useState(false);
-  const [isDark, setIsDark] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('theme');
-    const dark = saved ? saved === 'dark' : false;
-    setIsDark(dark);
-    document.documentElement.classList.toggle('dark', dark);
-  }, []);
-
-  if (!mounted) return null;
-
-  function toggle() {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-  }
-
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      onClick={toggle}
-      className={cn(
-        'h-10 w-10 rounded-2xl border border-border/40 bg-card/50 backdrop-blur-xl hover:bg-card/70'
-      )}
-      aria-label={isDark ? 'تغییر به حالت روشن' : 'تغییر به حالت تیره'}
-    >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-    </Button>
   );
 }

@@ -1,17 +1,16 @@
 /**
- * Sakhtar CRM — Design tokens (HSL + Primer Light palette)
- * Primary: مجنتا #D01060 → 335 86% 44%
- * Secondary: آبی درباری (طیف آبی)
- * Light mode: پالت GitHub Primer Light برای پس‌زمینه و لایه‌ها.
- * برای white-label: می‌توان فقط --primary (و در صورت نیاز --secondary) را per tenant override کرد.
+ * Sakhtar CRM — Design tokens (HSL + palette)
+ * Primary: #234EA4 → 220 65% 39%
+ * Secondary: #122A58 → 219 66% 21%
+ * Light mode: پالت Primer Light برای پس‌زمینه؛ primary/secondary از پالت آبی.
  */
 
-/* ——— Light Mode (Primer Light) ——— */
+/* ——— Light Mode ——— */
 :root,
 [data-theme="light"] {
   --radius: 18px;
 
-  /* لایه‌های پس‌زمینه پالت Primer Light (قابل override برای theme-switch) */
+  /* لایه‌های پس‌زمینه پالت Primer Light */
   --bg-default: #FFFFFF;
   --bg-subtle: #F6F8FA;
   --bg-muted: #EFF2F5;
@@ -21,7 +20,7 @@
   --bg-gray-1: #F2F5F3;
   --bg-gray-2: #E4EBE6;
 
-  /* توکن‌های HSL هم‌تراز با پالت (برای Tailwind/shadcn) */
+  /* توکن‌های HSL (Tailwind/shadcn) */
   --background: 0 0% 100%;
   --foreground: 210 12% 16%;
 
@@ -33,12 +32,12 @@
 
   --border: 213 18% 90%;
   --input: 213 18% 90%;
-  --ring: 335 86% 44%;
+  --ring: 220 65% 39%;
 
-  --primary: 335 86% 44%;
+  --primary: 220 65% 39%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 217 91% 60%;
+  --secondary: 219 66% 21%;
   --secondary-foreground: 0 0% 100%;
 
   --destructive: 0 75% 55%;
@@ -48,33 +47,33 @@
 /* ——— Dark Mode ——— */
 .dark,
 [data-theme="dark"] {
-  /* لایه‌های پس‌زمینه برای dark (GitHub Dark–style) */
-  --bg-default: #0d1117;
-  --bg-subtle: #161b22;
-  --bg-muted: #21262d;
-  --bg-toolbar: #30363d;
-  --border-default: #30363d;
-  --bg-disabled: #484f58;
-  --bg-gray-1: #21262d;
-  --bg-gray-2: #161b22;
+  /* لایه‌های پس‌زمینه از پالت آبی */
+  --bg-default: #0A162F;
+  --bg-subtle: #10254D;
+  --bg-muted: #122A58;
+  --bg-toolbar: #10254D;
+  --border-default: #122A58;
+  --bg-disabled: #10254D;
+  --bg-gray-1: #122A58;
+  --bg-gray-2: #10254D;
 
-  --background: 210 24% 6%;
+  --background: 218 65% 11%;
   --foreground: 210 12% 95%;
 
-  --card: 210 22% 10%;
+  --card: 217 66% 18%;
   --card-foreground: 210 12% 95%;
 
-  --muted: 210 18% 14%;
+  --muted: 219 66% 21%;
   --muted-foreground: 210 10% 70%;
 
-  --border: 210 16% 18%;
-  --input: 210 16% 18%;
-  --ring: 335 86% 44%;
+  --border: 219 66% 21%;
+  --input: 219 66% 21%;
+  --ring: 220 65% 39%;
 
-  --primary: 335 86% 44%;
+  --primary: 220 65% 39%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 217 85% 55%;
+  --secondary: 219 66% 21%;
   --secondary-foreground: 0 0% 100%;
 
   --destructive: 0 70% 55%;

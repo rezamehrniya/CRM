@@ -13,7 +13,7 @@ const dealSelect = {
   expectedCloseDate: true,
   stage: { select: { id: true, name: true } },
   pipeline: { select: { id: true, name: true } },
-  contact: { select: { id: true, fullName: true } },
+  contact: { select: { id: true, firstName: true, lastName: true } },
   company: { select: { id: true, name: true } },
 };
 
@@ -30,7 +30,7 @@ export class DealsService {
       const q = query.q.trim();
       where.OR = [
         { title: { contains: q, mode: 'insensitive' } },
-        { contact: { fullName: { contains: q, mode: 'insensitive' } } },
+        { contact: { OR: [{ firstName: { contains: q, mode: 'insensitive' } }, { lastName: { contains: q, mode: 'insensitive' } }] } },
         { company: { name: { contains: q, mode: 'insensitive' } } },
       ];
     }

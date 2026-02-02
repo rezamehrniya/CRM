@@ -63,12 +63,16 @@
 | سند | توضیح |
 |-----|--------|
 | [AUTH-ARCHITECTURE.md](AUTH-ARCHITECTURE.md) | فلوی کامل Auth، Guardها، چک‌لیست QA ضد نشت |
+| [INTEGRATION-ERP-CRM-PROVISIONING.md](INTEGRATION-ERP-CRM-PROVISIONING.md) | **هماهنگی ERP ↔ CRM:** قرارداد API پروویژنینگ، تسک‌های CRM و ERP، استقرار دو سرور؛ قابل ارسال به هر دو Cursor Dev |
 
 ---
 
-## مرجع Spec و workflow: OpenSpec-main
+## مرجع Spec و workflow: OpenSpec
 
-پروژه از **[OpenSpec-main](../OpenSpec-main/)** به‌عنوان مرجع برای نگارش spec و تغییرات استفاده می‌کند.
+- **[راهنمای OpenSpec — فارسی](OPENSPEC-GUIDE.md)** — مفاهیم، workflow در این پروژه، لینک به مرجع کامل.
+- **ایندکس داکیومنت OpenSpec:** [openspec/README.md](openspec/README.md).
+
+پروژه از **[OpenSpec-main](../OpenSpec-main/)** به‌عنوان مرجع کامل (انگلیسی) برای نگارش spec و تغییرات استفاده می‌کند.
 
 | موضوع | مسیر در OpenSpec-main |
 |--------|------------------------|

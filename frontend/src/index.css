@@ -49,7 +49,7 @@
   }
 }
 
-/* اعداد فارسی با فونت FaNum */
+/* اعداد فارسی با فونت Peyda FaNum از پوشهٔ FONTS */
 .fa-num {
-  font-family: 'Vazirmatn FaNum', 'Vazirmatn', 'Peyda', system-ui, sans-serif;
+  font-family: 'Peyda FaNum', 'Peyda', system-ui, sans-serif;
 }

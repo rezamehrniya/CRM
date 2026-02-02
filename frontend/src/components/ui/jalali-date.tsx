@@ -18,7 +18,7 @@ export function JalaliDate({ value, dateOnly = false, className }: JalaliDatePro
   const gregorian = formatGregorian(value, dateOnly);
   return (
     <span
-      className={className}
+      className={cn('fa-num', className)}
       title={gregorian ? `میلادی: ${gregorian}` : undefined}
     >
       {jalali}

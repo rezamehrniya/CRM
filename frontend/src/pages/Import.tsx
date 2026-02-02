@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 
 type ImportType = 'contacts' | 'companies';
 
-const CONTACTS_HEADERS = 'fullName,phone,email';
+const CONTACTS_HEADERS = 'firstName,lastName,phone,email';
 const COMPANIES_HEADERS = 'name,phone,website';
 
 function parseCsv(text: string): string[][] {
@@ -36,17 +36,21 @@ function parseCsv(text: string): string[][] {
   });
 }
 
-function parseContactsCsv(text: string): Array<{ fullName?: string; phone?: string; email?: string }> {
+function parseContactsCsv(text: string): Array<{ firstName?: string; lastName?: string; fullName?: string; phone?: string; email?: string }> {
   const rows = parseCsv(text);
   if (rows.length < 2) return [];
   const header = rows[0].map((h) => h.toLowerCase().replace(/\s/g, ''));
-  const nameIdx = header.findIndex((h) => h === 'fullname' || h === 'name' || h === 'نام');
+  const firstIdx = header.findIndex((h) => h === 'firstname' || h === 'نام');
+  const lastIdx = header.findIndex((h) => h === 'lastname' || h === 'نامخانوادگی');
+  const fullIdx = header.findIndex((h) => h === 'fullname' || h === 'name');
   const phoneIdx = header.findIndex((h) => h === 'phone' || h === 'tel' || h === 'موبایل');
   const emailIdx = header.findIndex((h) => h === 'email' || h === 'ایمیل');
   return rows.slice(1).map((row) => ({
-    fullName: nameIdx >= 0 ? row[nameIdx] : row[0],
-    phone: phoneIdx >= 0 ? row[phoneIdx] : row[1],
-    email: emailIdx >= 0 ? row[emailIdx] : row[2],
+    firstName: firstIdx >= 0 ? row[firstIdx] : undefined,
+    lastName: lastIdx >= 0 ? row[lastIdx] : undefined,
+    fullName: fullIdx >= 0 ? row[fullIdx] : (firstIdx < 0 && lastIdx < 0 ? row[0] : undefined),
+    phone: phoneIdx >= 0 ? row[phoneIdx] : (firstIdx >= 0 ? row[2] : row[1]),
+    email: emailIdx >= 0 ? row[emailIdx] : (firstIdx >= 0 ? row[3] : row[2]),
   }));
 }
 
@@ -110,10 +114,10 @@ export default function ImportPage() {
     try {
       const filtered =
         type === 'contacts'
-          ? parsed.filter((r) => (r.fullName ?? '').toString().trim())
+          ? parsed.filter((r) => ((r.firstName ?? '').toString().trim()) || ((r.lastName ?? '').toString().trim()) || ((r.fullName ?? '').toString().trim()))
           : parsed.filter((r) => (r.name ?? '').toString().trim());
       if (filtered.length === 0) {
-        setError('هیچ ردیف معتبری (با نام/نام کامل) یافت نشد.');
+        setError('هیچ ردیف معتبری (با نام یا نام خانوادگی یا نام کامل) یافت نشد.');
         setImporting(false);
         return;
       }
@@ -131,7 +135,7 @@ export default function ImportPage() {
   const downloadTemplate = () => {
     const headers = type === 'contacts' ? CONTACTS_HEADERS : COMPANIES_HEADERS;
     const sample = type === 'contacts'
-      ? 'نمونه مخاطب,09121234567,sample@example.com'
+      ? 'نام,نام خانوادگی,09121234567,sample@example.com'
       : 'نمونه شرکت,02112345678,https://example.com';
     const blob = new Blob([`\uFEFF${headers}\n${sample}\n`], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -198,7 +202,7 @@ export default function ImportPage() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          فایل CSV با سطر اول عنوان‌ها. برای مخاطبین: fullName, phone, email — برای شرکت‌ها: name, phone, website.
+          فایل CSV با سطر اول عنوان‌ها. برای مخاطبین: firstName, lastName, phone, email (یا fullName برای نام کامل) — برای شرکت‌ها: name, phone, website.
         </p>
 
         <div className="flex flex-wrap gap-2 items-center">

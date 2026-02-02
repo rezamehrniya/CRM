@@ -6,7 +6,6 @@ import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, CheckSquare, User, HandCoins, ArrowRight } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 import { JalaliDate } from '@/components/ui/jalali-date';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorPage } from '@/components/error-page';
 
@@ -15,7 +14,7 @@ type TaskDetailData = {
   title: string;
   dueAt?: string | null;
   status: string;
-  contact?: { id: string; fullName: string } | null;
+  contact?: { id: string; firstName: string; lastName: string } | null;
   deal?: { id: string; title: string } | null;
 };
 
@@ -106,9 +105,12 @@ export default function TaskDetail() {
                   <p className="text-sm text-muted-foreground">کار</p>
                 </div>
               </div>
-              <Button type="button" variant="outline" asChild>
-                <Link to={`${base}/tasks`}>برگشت به لیست</Link>
-              </Button>
+              <Link
+                to={`${base}/tasks`}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-input bg-transparent px-4 py-2 font-medium transition-colors hover:bg-muted"
+              >
+                برگشت به لیست
+              </Link>
             </div>
 
             <dl className="mt-6 space-y-4">
@@ -129,7 +131,7 @@ export default function TaskDetail() {
                     <dt className="text-xs text-muted-foreground">مخاطب</dt>
                     <dd>
                       <Link to={`${base}/contacts/${task.contact.id}`} className="font-medium text-primary hover:underline">
-                        {task.contact.fullName}
+                        {[task.contact.firstName, task.contact.lastName].filter(Boolean).join(' ').trim() || '—'}
                       </Link>
                     </dd>
                   </div>

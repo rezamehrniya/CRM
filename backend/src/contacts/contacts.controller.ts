@@ -37,7 +37,7 @@ export class ContactsController {
 
   @Post('import')
   @UseGuards(SubscriptionActiveGuard)
-  async import(@Req() req: Request, @Body() body: { items?: Array<{ fullName?: string; phone?: string; email?: string }> }) {
+  async import(@Req() req: Request, @Body() body: { items?: Array<{ firstName?: string; lastName?: string; fullName?: string; phone?: string; email?: string }> }) {
     const tenant = (req as any).tenant;
     if (!tenant) throw new Error('Tenant not found');
     const items = Array.isArray(body?.items) ? body.items : [];

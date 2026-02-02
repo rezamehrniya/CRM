@@ -9,7 +9,7 @@ const activitySelect = {
   happenedAt: true,
   contactId: true,
   dealId: true,
-  contact: { select: { id: true, fullName: true } },
+  contact: { select: { id: true, firstName: true, lastName: true } },
   deal: { select: { id: true, title: true } },
 };
 

@@ -5,20 +5,21 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { formatFaNum } from '@/lib/numbers';
-import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { JalaliDate } from '@/components/ui/jalali-date';
+import { JalaliDateInput } from '@/components/ui/jalali-date-input';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 
 type Task = {
   id: string;
   title: string;
   dueAt?: string | null;
   status: string;
-  contact?: { id: string; fullName: string } | null;
+  contact?: { id: string; firstName: string; lastName: string } | null;
   deal?: { id: string; title: string } | null;
 };
 
@@ -129,7 +130,7 @@ export default function Tasks() {
             <option value="OPEN">باز</option>
             <option value="DONE">انجام‌شده</option>
           </select>
-          <Button type="button" onClick={handleCreate}>
+          <Button type="button" onClick={handleCreate} className="whitespace-nowrap">
             کار جدید
           </Button>
         </div>
@@ -142,8 +143,8 @@ export default function Tasks() {
       )}
 
       {loading && (
-        <div className="glass-table-surface overflow-hidden rounded-card">
-          <table className="w-full">
+        <div className="glass-table-surface overflow-x-auto rounded-card">
+          <table className="w-full min-w-[450px]">
             <thead>
               <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
                 <th className="text-start pe-4 ps-4 font-medium">عنوان</th>
@@ -168,8 +169,8 @@ export default function Tasks() {
 
       {!loading && data && (
         <>
-          <div className="glass-table-surface overflow-hidden rounded-card">
-            <table className="w-full">
+          <div className="glass-table-surface overflow-x-auto rounded-card">
+            <table className="w-full min-w-[450px]">
               <thead>
                 <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
                   <th className="text-start pe-4 ps-4 font-medium">عنوان</th>
@@ -195,14 +196,15 @@ export default function Tasks() {
                     </td>
                     <td className="pe-4 ps-4"><JalaliDate value={t.dueAt} dateOnly /></td>
                     <td className="pe-4 ps-4">{t.status === 'DONE' ? 'انجام‌شده' : 'باز'}</td>
-                    <td className="pe-4 ps-4">
-                      <Link to={`${base}/tasks/${t.id}`} className="text-sm text-muted-foreground hover:text-foreground ml-2">
-                        مشاهده
+                    <td className="pe-4 ps-4 flex items-center gap-1">
+                      <Link to={`${base}/tasks/${t.id}`} className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--bg-muted)]" aria-label="مشاهده" title="مشاهده">
+                        <Eye className="size-4" />
                       </Link>
                       <Button
                         type="button"
-                        variant="link"
-                        size="sm"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setDrawer(t);
                           setFormOpen(true);
@@ -212,8 +214,10 @@ export default function Tasks() {
                             status: t.status,
                           });
                         }}
+                        aria-label="ویرایش"
+                        title="ویرایش"
                       >
-                        ویرایش
+                        <Pencil className="size-4" />
                       </Button>
                     </td>
                   </tr>
@@ -258,12 +262,10 @@ export default function Tasks() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="task-dueAt">موعد</Label>
-                <Input
+                <JalaliDateInput
                   id="task-dueAt"
-                  type="date"
-                  placeholder="موعد"
                   value={form.dueAt}
-                  onChange={(e) => setForm((f) => ({ ...f, dueAt: e.target.value }))}
+                  onChange={(v) => setForm((f) => ({ ...f, dueAt: v }))}
                   className="bg-card"
                 />
               </div>
@@ -282,7 +284,10 @@ export default function Tasks() {
             </div>
             <div className="flex gap-2 mt-4 justify-end">
               {drawer && (
-                <Button type="button" variant="destructive" onClick={() => handleDelete(drawer.id)} disabled={saving}>حذف</Button>
+                <Button type="button" variant="destructive" onClick={() => handleDelete(drawer.id)} disabled={saving} aria-label="حذف" title="حذف" className="gap-2">
+                  <Trash2 className="size-4" />
+                  حذف
+                </Button>
               )}
               <Button type="button" variant="outline" onClick={closeForm}>انصراف</Button>
               <Button type="button" onClick={handleSave} disabled={saving || !form.title.trim()}>

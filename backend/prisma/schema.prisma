@@ -21,6 +21,7 @@ model Tenant {
   companies     Company[]
   pipelines     Pipeline[]
   deals         Deal[]
+  leads         Lead[]
   activities    Activity[]
   tasks         Task[]
   auditLogs     AuditLog[]
@@ -31,6 +32,10 @@ model User {
   id           String   @id @default(cuid())
   phone        String?
   email        String?
+  firstName    String?  // نام — اجباری پس از اولین ورود
+  lastName     String?  // نام خانوادگی — اجباری پس از اولین ورود
+  displayName  String?
+  avatarUrl    String?
   passwordHash String?
   createdAt    DateTime @default(now())
   status       String   // ACTIVE, DISABLED
@@ -69,7 +74,8 @@ model Membership {
 model Contact {
   id          String   @id @default(cuid())
   tenantId    String
-  fullName    String
+  firstName   String   // نام
+  lastName    String   // نام خانوادگی
   phone       String?
   email       String?
   companyId   String?
@@ -150,6 +156,25 @@ model Activity {
   tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
   deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+}
+
+model Lead {
+  id          String    @id @default(cuid())
+  tenantId    String
+  firstName   String    // نام
+  lastName    String    // نام خانوادگی
+  phone       String?
+  email       String?
+  companyName String?
+  source      String?   // منبع لید: سایت، تبلیغ، تماس
+  status      String    @default("NEW") // NEW, CONTACTED, QUALIFIED, CONVERTED, LOST
+  notes       String?
+  followUpAt  DateTime?
+  ownerUserId String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Task {

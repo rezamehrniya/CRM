@@ -4,7 +4,7 @@
  * مرجع: docs/specs/RBAC-PANELS.md, docs/specs/PRD-PANELS-USER-STORIES.md
  */
 import { Link, useParams } from 'react-router-dom';
-import { Users, GitBranch, Link2, CreditCard, ShieldAlert } from 'lucide-react';
+import { Users, GitBranch, Link2, CreditCard, ShieldAlert, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { ErrorPage } from '@/components/error-page';
@@ -100,7 +100,10 @@ export default function Settings() {
                 <Link
                   to={section.href}
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-input bg-transparent px-3 font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="مشاهده"
+                  title="مشاهده"
                 >
+                  <Eye className="size-4" />
                   مشاهده
                 </Link>
               )}

@@ -13,11 +13,14 @@ import Tasks from './pages/Tasks';
 import Activity from './pages/Activity';
 import LoginPage from './pages/Login';
 import Import from './pages/Import';
+import Leads from './pages/Leads';
 import Settings from './pages/Settings';
 import SettingsBilling from './pages/SettingsBilling';
 import SettingsPipeline from './pages/SettingsPipeline';
 import SettingsUsers from './pages/SettingsUsers';
 import SettingsLeadSources from './pages/SettingsLeadSources';
+import Members from './pages/Members';
+import Profile from './pages/Profile';
 import { ErrorPage, type ErrorPageVariant } from './components/error-page';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -81,6 +84,9 @@ export default function App() {
         <Route path="tasks/:id" element={<TaskDetail />} />
         <Route path="activity" element={<Activity />} />
         <Route path="import" element={<Import />} />
+        <Route path="leads" element={<Leads />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="members" element={<ProtectedRoute requireOwner><Members /></ProtectedRoute>} />
         <Route path="settings" element={<ProtectedRoute requireOwner><Settings /></ProtectedRoute>} />
         <Route path="settings/billing" element={<ProtectedRoute requireOwner><SettingsBilling /></ProtectedRoute>} />
         <Route path="settings/pipeline" element={<ProtectedRoute requireOwner><SettingsPipeline /></ProtectedRoute>} />

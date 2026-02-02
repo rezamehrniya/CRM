@@ -128,13 +128,14 @@ async function main() {
   }
 
   let contact = await prisma.contact.findFirst({
-    where: { tenantId: tenant.id, fullName: 'علی رضایی' },
+    where: { tenantId: tenant.id, firstName: 'علی', lastName: 'رضایی' },
   });
   if (!contact) {
     contact = await prisma.contact.create({
       data: {
         tenantId: tenant.id,
-        fullName: 'علی رضایی',
+        firstName: 'علی',
+        lastName: 'رضایی',
         phone: '09121234567',
         email: 'ali@example.com',
         companyId: company.id,

@@ -7,17 +7,17 @@ import { formatFaNum } from '@/lib/numbers';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { JalaliDate } from '@/components/ui/jalali-date';
+import { JalaliDateTimeInput } from '@/components/ui/jalali-date-input';
 
 type ActivityItem = {
   id: string;
   type: string;
   body?: string | null;
   happenedAt: string;
-  contact?: { id: string; fullName: string } | null;
+  contact?: { id: string; firstName: string; lastName: string } | null;
   deal?: { id: string; title: string } | null;
 };
 
@@ -96,8 +96,8 @@ export default function Activity() {
       )}
 
       {loading && (
-        <div className="glass-table-surface overflow-hidden rounded-card">
-          <table className="w-full">
+        <div className="glass-table-surface overflow-x-auto rounded-card">
+          <table className="w-full min-w-[400px]">
             <thead>
               <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
                 <th className="text-start pe-4 ps-4 font-medium">نوع</th>
@@ -120,8 +120,8 @@ export default function Activity() {
 
       {!loading && data && (
         <>
-          <div className="glass-table-surface overflow-hidden rounded-card">
-            <table className="w-full">
+          <div className="glass-table-surface overflow-x-auto rounded-card">
+            <table className="w-full min-w-[400px]">
               <thead>
                 <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
                   <th className="text-start pe-4 ps-4 font-medium">نوع</th>
@@ -197,11 +197,10 @@ export default function Activity() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="activity-happenedAt">زمان</Label>
-                <Input
+                <JalaliDateTimeInput
                   id="activity-happenedAt"
-                  type="datetime-local"
                   value={form.happenedAt}
-                  onChange={(e) => setForm((f) => ({ ...f, happenedAt: e.target.value }))}
+                  onChange={(v) => setForm((f) => ({ ...f, happenedAt: v }))}
                   className="bg-card"
                 />
               </div>

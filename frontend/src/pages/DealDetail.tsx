@@ -6,7 +6,6 @@ import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, HandCoins, User, Building2, ArrowRight } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 import { formatFaNum } from '@/lib/numbers';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorPage } from '@/components/error-page';
 
@@ -16,7 +15,7 @@ type DealDetailData = {
   amount?: unknown;
   stage?: { id: string; name: string };
   pipeline?: { id: string; name: string };
-  contact?: { id: string; fullName: string } | null;
+  contact?: { id: string; firstName: string; lastName: string } | null;
   company?: { id: string; name: string } | null;
 };
 
@@ -105,9 +104,12 @@ export default function DealDetail() {
                   <p className="text-sm text-muted-foreground">معامله</p>
                 </div>
               </div>
-              <Button type="button" variant="outline" asChild>
-                <Link to={`${base}/deals`}>برگشت به لیست</Link>
-              </Button>
+              <Link
+                to={`${base}/deals`}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-input bg-transparent px-4 py-2 font-medium transition-colors hover:bg-muted"
+              >
+                برگشت به لیست
+              </Link>
             </div>
 
             <dl className="mt-6 space-y-4">
@@ -115,7 +117,7 @@ export default function DealDetail() {
                 <HandCoins className="size-5 text-muted-foreground shrink-0" aria-hidden />
                 <div>
                   <dt className="text-xs text-muted-foreground">مبلغ</dt>
-                  <dd className="font-medium fa-num">{formatFaNum(deal.amount)} تومان</dd>
+                  <dd className="font-medium fa-num">{formatFaNum(deal.amount as string | number | null | undefined)} تومان</dd>
                 </div>
               </div>
               {deal.stage && (
@@ -131,7 +133,7 @@ export default function DealDetail() {
                     <dt className="text-xs text-muted-foreground">مخاطب</dt>
                     <dd>
                       <Link to={`${base}/contacts/${deal.contact.id}`} className="font-medium text-primary hover:underline">
-                        {deal.contact.fullName}
+                        {[deal.contact.firstName, deal.contact.lastName].filter(Boolean).join(' ').trim() || '—'}
                       </Link>
                     </dd>
                   </div>

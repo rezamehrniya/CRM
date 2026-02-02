@@ -1,10 +1,12 @@
 import { Outlet, useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   Users,
+  UserCog,
   Building2,
   HandCoins,
+  Target,
   CheckSquare,
   Activity,
   Upload,
@@ -15,9 +17,8 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import { ThemeToggle } from '../components/theme-toggle';
-import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
+import { ThemeToggle } from '../components/theme-toggle';
 import { useAuth } from '../contexts/auth-context';
 
 type NavItem = {
@@ -33,9 +34,11 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'contacts', label: 'مخاطبین', href: 'contacts', Icon: Users },
   { id: 'companies', label: 'شرکت‌ها', href: 'companies', Icon: Building2 },
   { id: 'deals', label: 'معاملات', href: 'deals', Icon: HandCoins },
+  { id: 'leads', label: 'لیدها', href: 'leads', Icon: Target },
   { id: 'tasks', label: 'کارها', href: 'tasks', Icon: CheckSquare },
   { id: 'activity', label: 'فعالیت', href: 'activity', Icon: Activity },
   { id: 'import', label: 'ورود داده', href: 'import', Icon: Upload },
+  { id: 'members', label: 'مدیریت اعضا', href: 'members', Icon: UserCog, adminOnly: true },
   { id: 'settings', label: 'تنظیمات', href: 'settings', Icon: Settings, adminOnly: true },
 ];
 
@@ -55,13 +58,19 @@ export default function AppLayout() {
   useEffect(() => {
     if (loading) return;
     const path = location.pathname;
+    const isProfile = path === `${base}/profile`;
     const isSettings = path === `${base}/settings` || path.endsWith('/settings');
-    if (isSettings && !isAdmin) {
+    const isMembers = path === `${base}/members`;
+    if ((isSettings || isMembers) && !isAdmin) {
       navigate(`${base}/error?code=403`, { replace: true });
       return;
     }
     if (tenantSlug === 'demo' && !user) {
       navigate(`${base}/login`, { replace: true });
+      return;
+    }
+    if (user && user.profileComplete === false && !isProfile) {
+      navigate(`${base}/profile?complete=1`, { replace: true });
     }
   }, [loading, isAdmin, base, location.pathname, navigate, tenantSlug, user]);
 
@@ -74,6 +83,19 @@ export default function AppLayout() {
   });
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userMenuOpen]);
 
   useEffect(() => {
     try {
@@ -101,54 +123,49 @@ export default function AppLayout() {
         />
       )}
 
-      {/* سایدبار: پس‌زمینهٔ سکشن‌ها از پالت Primer (--bg-subtle)، مرز از --border-default */}
+      {/* سایدبار: پس‌زمینه #122A58، متن و آیکن سفید */}
       <aside
         className={`
           app-shell-sidebar
           ${collapsed ? 'collapsed' : ''}
           fixed inset-y-0 start-0 z-30 flex flex-col
-          bg-[var(--bg-subtle)]
-          border-e border-[var(--border-default)]
+          bg-[#122A58]
+          border-e border-white/15
           transition-[width,transform] duration-200 ease-out
           lg:!translate-x-0
           ${mobileMenuOpen ? '!translate-x-0' : 'translate-x-full lg:!translate-x-0'}
         `}
       >
-        {/* نوار عنوان سایدبار: --bg-toolbar برای نوار ابزار/عنوان */}
-        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-[var(--border-default)] px-3 bg-[var(--bg-toolbar)]">
+        {/* نوار عنوان سایدبار: لوگو + ساختار */}
+        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-white/15 px-3 bg-[#122A58]">
           {!collapsed && (
-            <Link
-              to={base}
-              className="min-w-0 truncate text-sm font-semibold text-foreground"
-            >
-              {tenantSlug === 'demo' ? 'پنل مدیر فروش' : tenantSlug ? `سازمان: ${tenantSlug}` : 'Sakhtar CRM'}
+            <Link to={base} className="flex items-center gap-2 min-w-0">
+              <img
+                src="/whitelogo.png"
+                alt="ساختار"
+                className="h-9 w-9 object-contain shrink-0"
+              />
+              <span className="text-xl font-bold text-white truncate">ساختار</span>
+            </Link>
+          )}
+          {collapsed && (
+            <Link to={base} className="flex items-center justify-center w-full py-2">
+              <img src="/whitelogo.png" alt="ساختار" className="h-8 w-8 object-contain" />
             </Link>
           )}
           <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(false)}
-              className="p-2 rounded-md text-muted-foreground hover:bg-[var(--bg-muted)] hover:text-foreground lg:hidden transition-colors"
+              className="p-2 rounded-md text-white/80 hover:bg-white/10 hover:text-white lg:hidden transition-colors"
               aria-label="بستن منو"
             >
               <X className="size-5" aria-hidden />
             </button>
-            <button
-              type="button"
-              onClick={() => setCollapsed((c) => !c)}
-              className="p-2 rounded-md text-muted-foreground hover:bg-[var(--bg-muted)] hover:text-foreground hidden lg:flex transition-colors"
-              aria-label={collapsed ? 'باز کردن منو' : 'جمع کردن منو'}
-            >
-              {collapsed ? (
-                <PanelLeft className="size-5" aria-hidden />
-              ) : (
-                <PanelLeftClose className="size-5" aria-hidden />
-              )}
-            </button>
           </div>
         </div>
 
-        {/* ناو: آیتم‌ها با gap-2، rounded-md، hover و active */}
+        {/* ناو: آیتم‌ها با متن و آیکن سفید */}
         <nav className="flex-1 overflow-y-auto py-3 px-2 flex flex-col gap-0.5">
           {navItems.map((item) => {
             const href = `${base}/${item.href}`;
@@ -159,11 +176,11 @@ export default function AppLayout() {
             const content = (
               <>
                 <Icon
-                  className="size-5 shrink-0 text-muted-foreground"
+                  className="size-5 shrink-0 text-white"
                   aria-hidden
                 />
                 {!collapsed && (
-                  <span className="text-sm font-medium truncate">{item.label}</span>
+                  <span className="text-sm font-medium truncate text-white">{item.label}</span>
                 )}
               </>
             );
@@ -174,9 +191,9 @@ export default function AppLayout() {
                 title={collapsed ? item.label : undefined}
                 className={`
                   flex items-center gap-2 rounded-md px-3 py-2
-                  text-foreground transition-colors
-                  hover:bg-[var(--bg-muted)]
-                  ${active ? 'bg-[var(--bg-muted)] border-e-2 border-primary text-foreground' : ''}
+                  text-white transition-colors
+                  hover:bg-white/10
+                  ${active ? 'bg-white/15 border-e-2 border-white text-white' : ''}
                   ${collapsed ? 'justify-center' : ''}
                 `}
               >
@@ -186,20 +203,20 @@ export default function AppLayout() {
           })}
         </nav>
 
-        {/* پایین سایدبار: ردیف پایین از --bg-muted، مرز از --border-default */}
-        <div className="shrink-0 border-t border-[var(--border-default)] p-3 flex items-center gap-2 bg-[var(--bg-muted)]">
-          <ThemeToggle />
-          <Button
+        {/* پایین سایدبار: دکمه جمع/باز کردن — سمت چپ، آیکن برگردانده‌شده */}
+        <div className="shrink-0 border-t border-white/15 p-2 flex justify-end bg-[#122A58]">
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
-            onClick={logout}
-            className="flex-1 justify-center gap-2 text-muted-foreground hover:text-foreground"
-            aria-label="خروج"
+            onClick={() => setCollapsed((c) => !c)}
+            className="p-2 rounded-md text-white/80 hover:bg-white/10 hover:text-white hidden lg:flex transition-colors [&_svg]:scale-x-[-1]"
+            aria-label={collapsed ? 'باز کردن منو' : 'جمع کردن منو'}
           >
-            <LogOut className="size-5 shrink-0" aria-hidden />
-            {!collapsed && <span className="text-sm font-medium">خروج</span>}
-          </Button>
+            {collapsed ? (
+              <PanelLeft className="size-5" aria-hidden />
+            ) : (
+              <PanelLeftClose className="size-5" aria-hidden />
+            )}
+          </button>
         </div>
       </aside>
 
@@ -215,31 +232,70 @@ export default function AppLayout() {
           >
             <Menu className="size-5" aria-hidden />
           </button>
-          <div className="flex-1 max-w-xl min-w-0">
-            <Input
-              type="search"
-              placeholder="جستجو..."
-              className="bg-[var(--bg-muted)]/60 border-[var(--border-default)] text-sm"
-            />
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-sm text-muted-foreground hidden sm:inline truncate max-w-[140px]" title={tenantSlug === 'demo' ? 'پنل مدیر فروش (دمو)' : tenantSlug}>
-              {tenantSlug === 'demo' ? 'پنل مدیر فروش' : tenantSlug}
-            </span>
+          <div className="flex-1 min-w-0" />
+          <ThemeToggle />
+          <div className="relative flex items-center shrink-0" ref={userMenuRef}>
             {user && (
-              <span
-                className="text-sm text-muted-foreground hidden md:inline truncate max-w-[140px]"
-                title={user.email ?? user.phone ?? undefined}
+              <button
+                type="button"
+                onClick={() => setUserMenuOpen((o) => !o)}
+                className="flex items-center gap-2 flex-row-reverse rounded-xl p-1.5 pl-2 hover:bg-[var(--bg-muted)] transition-colors"
+                aria-expanded={userMenuOpen}
+                aria-haspopup="true"
+                aria-label="منوی کاربر"
               >
-                {user.email ?? user.phone ?? 'کاربر'}
-              </span>
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt=""
+                    className="w-8 h-8 rounded-full object-cover border border-primary/25 shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center text-xs font-medium text-primary shrink-0"
+                    title={role === 'OWNER' ? 'مدیر' : 'فروشنده'}
+                  >
+                    {([user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.displayName || (user.email?.[0] ?? user.phone?.[0] ?? 'پ')).charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="hidden md:flex flex-col items-start min-w-0 max-w-[140px]">
+                  <span className="text-sm font-medium text-foreground truncate w-full text-start">
+                    {[user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.displayName || (user.email ? user.email.split('@')[0].replace(/^./, (c) => c.toUpperCase()) : user.phone ?? 'کاربر')}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {role === 'OWNER' ? 'مدیر' : 'فروشنده'}
+                  </span>
+                </div>
+              </button>
             )}
-            <div
-              className="w-8 h-8 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center text-xs font-medium text-primary shrink-0"
-              title={role === 'OWNER' ? 'مدیر' : 'فروشنده'}
-            >
-              {(user?.email?.[0] ?? user?.phone?.[0] ?? 'پ').toUpperCase()}
-            </div>
+            {userMenuOpen && user && (
+              <div
+                className="absolute top-full end-0 mt-1 min-w-[160px] rounded-xl border border-[var(--border-default)] bg-[var(--bg-default)] shadow-lg py-1 z-50"
+                role="menu"
+              >
+                <Link
+                  to={`${base}/profile`}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-[var(--bg-muted)] transition-colors"
+                  role="menuitem"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  <Settings className="size-4 shrink-0 text-muted-foreground" />
+                  پروفایل
+                </Link>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-[var(--bg-muted)] transition-colors text-start"
+                  role="menuitem"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    logout();
+                  }}
+                >
+                  <LogOut className="size-4 shrink-0 text-muted-foreground" />
+                  خروج
+                </button>
+              </div>
+            )}
           </div>
         </header>
 

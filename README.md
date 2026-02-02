@@ -12,13 +12,16 @@ CRM چندمستاجری با برند Sakhtar — دامنه: **crm.sakhtar.net
 ## مستندات و رفرنس
 
 - **اسناد داخلی پروژه:** [docs/](docs/) — شامل AUTH-ARCHITECTURE و سایر specها
-- **Spec و داکیومنت (مرجع):** پوشه **[OpenSpec-main](OpenSpec-main/)** به‌عنوان مرجع نگارش spec و workflow استفاده می‌شود:
-  - [مفاهیم و فلسفه](OpenSpec-main/docs/concepts.md)
-  - [شروع کار و ساختار](OpenSpec-main/docs/getting-started.md)
-  - [Workflowها و الگوها](OpenSpec-main/docs/workflows.md)
-  - [دستورات و CLI](OpenSpec-main/docs/commands.md) و [CLI مرجع](OpenSpec-main/docs/cli.md)
+- **OpenSpec (Spec و workflow):**
+  - **[راهنمای OpenSpec — فارسی](docs/OPENSPEC-GUIDE.md)** — مفاهیم، workflow در این پروژه، لینک به مرجع کامل
+  - **ایندکس داکیومنت OpenSpec:** [docs/openspec/](docs/openspec/README.md)
+  - **مرجع کامل (انگلیسی)** در پوشه [OpenSpec-main](OpenSpec-main/):
+    - [مفاهیم و فلسفه](OpenSpec-main/docs/concepts.md)
+    - [شروع کار و ساختار](OpenSpec-main/docs/getting-started.md)
+    - [Workflowها و الگوها](OpenSpec-main/docs/workflows.md)
+    - [دستورات و CLI](OpenSpec-main/docs/commands.md) و [CLI مرجع](OpenSpec-main/docs/cli.md)
 
-برای تعریف تغییرات و specهای جدید می‌توان از همان اصول OpenSpec (proposal → specs → design → tasks) و در صورت نصب CLI از دستورات `/opsx:new`, `/opsx:ff`, `/opsx:apply` استفاده کرد.
+برای تعریف تغییرات و specهای جدید از اصول OpenSpec (proposal → specs → design → tasks) استفاده کنید؛ در صورت نصب CLI از دستورات `/opsx:new`, `/opsx:ff`, `/opsx:apply` می‌توان استفاده کرد.
 
 ## پیش‌نیازها
 
@@ -138,6 +141,25 @@ $env:DOCKER_BUILDKIT=0; docker compose build
 ```
 
 بعد از بیلد، `docker compose up -d` را مثل قبل اجرا کن.
+
+### دیدن تغییرات کد با داکر (حالت توسعه)
+
+اگر با داکر کار می‌کنی و می‌خواهی **هر تغییری که در کد می‌دهی بلافاصله دیده شود** (بدون ری‌بیلد)، از compose مخصوص توسعه استفاده کن:
+
+```bash
+# از روت پروژه — اولین بار بیلد می‌کند، بعد فقط up
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+- **Backend:** پوشه‌های `backend/src` و `backend/prisma` روی کانتینر mount شده‌اند؛ Nest با `--watch` هر تغییر را می‌گیرد.
+- **Frontend:** کل پوشه‌ی `frontend` mount است؛ Vite با HMR هر تغییر را در مرورگر نشان می‌دهد.
+
+آدرس‌ها:
+
+- **اپ:** http://localhost:5173 (مثلاً http://localhost:5173/t/demo/app)
+- **API:** http://localhost:3001
+
+برای متوقف کردن: `Ctrl+C` یا در ترمینال دیگر `docker compose -f docker-compose.yml -f docker-compose.dev.yml down`.
 
 ---
 

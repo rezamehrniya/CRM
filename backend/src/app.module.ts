@@ -9,6 +9,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { SettingsModule } from './settings/settings.module';
 import { PipelinesModule } from './pipelines/pipelines.module';
 import { DealsModule } from './deals/deals.module';
+import { LeadsModule } from './leads/leads.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ActivitiesModule } from './activities/activities.module';
 
@@ -24,6 +25,7 @@ import { ActivitiesModule } from './activities/activities.module';
     SettingsModule,
     PipelinesModule,
     DealsModule,
+    LeadsModule,
     TasksModule,
     ActivitiesModule,
   ],

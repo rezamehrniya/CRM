@@ -5,8 +5,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Building2, Phone, Globe, Users, HandCoins, LayoutGrid, ArrowRight } from 'lucide-react';
 import { apiGet } from '@/lib/api';
-import { formatFaNum } from '@/lib/numbers';
-import { Button } from '@/components/ui/button';
+import { formatFaNum, digitsToFa } from '@/lib/numbers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorPage } from '@/components/error-page';
 
@@ -16,7 +15,7 @@ type CompanyDetailData = {
   phone?: string | null;
   website?: string | null;
   _count?: { contacts: number };
-  contacts?: Array<{ id: string; fullName: string; phone?: string | null; email?: string | null }>;
+  contacts?: Array<{ id: string; firstName: string; lastName: string; phone?: string | null; email?: string | null }>;
   deals?: Array<{
     id: string;
     title: string;
@@ -113,9 +112,12 @@ export default function CompanyDetail() {
                   <p className="text-sm text-muted-foreground">شرکت</p>
                 </div>
               </div>
-              <Button type="button" variant="outline" asChild>
-                <Link to={`${base}/companies`}>برگشت به لیست</Link>
-              </Button>
+              <Link
+                to={`${base}/companies`}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-input bg-transparent px-4 py-2 font-medium transition-colors hover:bg-muted"
+              >
+                برگشت به لیست
+              </Link>
             </div>
 
             <dl className="mt-6 space-y-4">
@@ -124,7 +126,7 @@ export default function CompanyDetail() {
                   <Phone className="size-5 text-muted-foreground shrink-0" aria-hidden />
                   <div>
                     <dt className="text-xs text-muted-foreground">تلفن</dt>
-                    <dd className="font-medium fa-num">{company.phone}</dd>
+                    <dd className="font-medium fa-num">{company.phone != null && company.phone !== '' ? digitsToFa(company.phone) : '—'}</dd>
                   </div>
                 </div>
               )}
@@ -161,14 +163,14 @@ export default function CompanyDetail() {
                   <Users className="size-4" aria-hidden />
                   <span className="text-sm">مخاطبین</span>
                 </div>
-                <p className="text-xl font-bold fa-num">{contacts.length}</p>
+                <p className="text-xl font-bold fa-num">{formatFaNum(contacts.length)}</p>
               </div>
               <div className="rounded-xl border border-border bg-muted/30 p-4">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <HandCoins className="size-4" aria-hidden />
                   <span className="text-sm">معاملات</span>
                 </div>
-                <p className="text-xl font-bold fa-num">{deals.length}</p>
+                <p className="text-xl font-bold fa-num">{formatFaNum(deals.length)}</p>
               </div>
             </div>
           </div>
@@ -191,9 +193,9 @@ export default function CompanyDetail() {
                 {contacts.map((c) => (
                   <li key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <Link to={`${base}/contacts/${c.id}`} className="font-medium text-primary hover:underline">
-                      {c.fullName}
+                      {[c.firstName, c.lastName].filter(Boolean).join(' ').trim() || '—'}
                     </Link>
-                    <span className="text-sm text-muted-foreground fa-num">{c.phone ?? c.email ?? '—'}</span>
+                    <span className="text-sm text-muted-foreground fa-num">{digitsToFa(c.phone ?? c.email ?? '')}</span>
                   </li>
                 ))}
               </ul>
@@ -221,7 +223,7 @@ export default function CompanyDetail() {
                       {d.title}
                     </Link>
                     <span className="text-sm text-muted-foreground">
-                      {d.stage?.name ?? '—'} · <span className="fa-num">{formatFaNum(d.amount)}</span>
+                      {d.stage?.name ?? '—'} · <span className="fa-num">{formatFaNum(d.amount as string | number | null | undefined)}</span>
                     </span>
                   </li>
                 ))}

@@ -20,13 +20,13 @@ const getBase = () => {
 
 export async function api<T = unknown>(
   path: string,
-  options?: RequestInit
+  options?: RequestInit & { skipContentType?: boolean }
 ): Promise<T> {
   const base = getBase();
   const url = path.startsWith('http') ? path : `${base}${path}`;
   const token = getAccessToken();
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(options?.skipContentType ? {} : { 'Content-Type': 'application/json' }),
     ...options?.headers,
   };
   if (token) {
@@ -42,6 +42,18 @@ export async function api<T = unknown>(
     throw new Error((err as any).message || err.code || res.statusText);
   }
   return res.json();
+}
+
+/** آپلود فایل (مثلاً آواتار) با FormData. body باید FormData باشد و skipContentType استفاده می‌شود. */
+export async function apiUploadFormData<T = { avatarUrl: string }>(
+  path: string,
+  formData: FormData
+): Promise<T> {
+  return api<T>(path, {
+    method: 'POST',
+    body: formData,
+    skipContentType: true,
+  });
 }
 
 export function apiGet<T = unknown>(path: string) {

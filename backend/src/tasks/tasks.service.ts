@@ -9,7 +9,7 @@ const taskSelect = {
   status: true,
   contactId: true,
   dealId: true,
-  contact: { select: { id: true, fullName: true } },
+  contact: { select: { id: true, firstName: true, lastName: true } },
   deal: { select: { id: true, title: true } },
 };
 
@@ -27,7 +27,7 @@ export class TasksService {
       const q = query.q.trim();
       where.OR = [
         { title: { contains: q, mode: 'insensitive' } },
-        { contact: { fullName: { contains: q, mode: 'insensitive' } } },
+        { contact: { OR: [{ firstName: { contains: q, mode: 'insensitive' } }, { lastName: { contains: q, mode: 'insensitive' } }] } },
         { deal: { title: { contains: q, mode: 'insensitive' } } },
       ];
     }

@@ -1,12 +1,30 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { Response } from 'express';
 import { createHash, randomBytes } from 'crypto';
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { TenantContext } from '../tenant/tenant.middleware';
 import { PrismaService } from '../prisma/prisma.service';
 import { AUTH } from './constants';
 import { AccessPayload } from './jwt.strategy';
+
+/** فایل آپلود از FileInterceptor (memory storage) */
+export interface UploadedAvatarFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  buffer?: Buffer;
+}
+
+const UPLOADS_AVATARS = 'uploads/avatars';
+const AVATAR_URL_PREFIX = '/api/uploads/avatars/';
+const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MB
 
 const COOKIE_PATH_PREFIX = '/api/t/';
 const SALT_ROUNDS = 10;
@@ -201,7 +219,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findFirst({
       where: { id: u.userId, status: 'ACTIVE' },
-      select: { id: true, email: true, phone: true },
+      select: { id: true, email: true, phone: true, firstName: true, lastName: true, displayName: true, avatarUrl: true },
     });
     if (!user) return { user: null, tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name } };
 
@@ -212,11 +230,143 @@ export class AuthService {
       return { user: null, tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name } };
     }
 
+    const profileUser = user as typeof user & { firstName?: string | null; lastName?: string | null; displayName?: string | null; avatarUrl?: string | null };
+    const firstName = profileUser.firstName ?? null;
+    const lastName = profileUser.lastName ?? null;
+    const profileComplete = !!(firstName?.trim() && lastName?.trim());
     return {
-      user: { id: user.id, email: user.email, phone: user.phone },
+      user: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        firstName,
+        lastName,
+        displayName: profileUser.displayName ?? null,
+        avatarUrl: profileUser.avatarUrl ?? null,
+        profileComplete,
+      },
       tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name },
       role: membership.role,
     };
+  }
+
+  async uploadAvatar(
+    tenant: TenantContext,
+    req: { user?: { userId: string; tenantId: string } },
+    file: UploadedAvatarFile | undefined,
+  ): Promise<{ avatarUrl: string }> {
+    const u = req.user;
+    if (!u || u.tenantId !== tenant.id) {
+      throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
+    }
+    if (!file || !file.buffer) {
+      throw new BadRequestException({ code: 'NO_FILE', message: 'فایلی ارسال نشده است' });
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      throw new BadRequestException({ code: 'FILE_TOO_LARGE', message: 'حداکثر حجم تصویر ۲ مگابایت است' });
+    }
+    if (!ALLOWED_MIMES.includes(file.mimetype)) {
+      throw new BadRequestException({ code: 'INVALID_TYPE', message: 'فقط تصاویر (JPEG، PNG، GIF، WebP) مجاز است' });
+    }
+    const ext = file.mimetype === 'image/jpeg' ? 'jpg' : file.mimetype === 'image/png' ? 'png' : file.mimetype === 'image/gif' ? 'gif' : 'webp';
+    const dir = join(process.cwd(), UPLOADS_AVATARS);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const filename = `${u.userId}_${Date.now()}.${ext}`;
+    const filepath = join(dir, filename);
+    await writeFile(filepath, file.buffer);
+    const avatarUrl = `${AVATAR_URL_PREFIX}${filename}`;
+    try {
+      await this.prisma.user.update({
+        where: { id: u.userId },
+        data: { avatarUrl } as Record<string, unknown>,
+      });
+    } catch (err: unknown) {
+      const msg = err && typeof (err as any).message === 'string' ? (err as any).message : '';
+      if (msg.includes('avatarUrl') || msg.includes('Unknown column')) {
+        throw new BadRequestException({
+          code: 'MIGRATION_REQUIRED',
+          message: 'ستون avatarUrl وجود ندارد. در backend اجرا کنید: npx prisma migrate deploy && npx prisma generate',
+        });
+      }
+      throw err;
+    }
+    return { avatarUrl };
+  }
+
+  async updateProfile(
+    tenant: TenantContext,
+    req: { user?: { userId: string; tenantId: string } },
+    body: { firstName?: string; lastName?: string; displayName?: string; avatarUrl?: string },
+  ) {
+    const u = req.user;
+    if (!u || u.tenantId !== tenant.id) {
+      throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
+    }
+    const data: { firstName?: string | null; lastName?: string | null; displayName?: string | null; avatarUrl?: string | null } = {};
+    if (body.firstName !== undefined) {
+      const v = body.firstName?.trim() ?? '';
+      if (!v) throw new BadRequestException({ code: 'INVALID_INPUT', message: 'نام اجباری است' });
+      data.firstName = v;
+    }
+    if (body.lastName !== undefined) {
+      const v = body.lastName?.trim() ?? '';
+      if (!v) throw new BadRequestException({ code: 'INVALID_INPUT', message: 'نام خانوادگی اجباری است' });
+      data.lastName = v;
+    }
+    if (body.displayName !== undefined) data.displayName = body.displayName?.trim() || null;
+    if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl?.trim() || null;
+    try {
+      await this.prisma.user.update({
+        where: { id: u.userId },
+        data: data as Record<string, unknown>,
+      });
+    } catch (err: unknown) {
+      const msg = err && typeof (err as any).message === 'string' ? (err as any).message : '';
+      if (msg.includes('firstName') || msg.includes('lastName') || msg.includes('displayName') || msg.includes('avatarUrl') || msg.includes('Unknown column')) {
+        throw new BadRequestException({
+          code: 'MIGRATION_REQUIRED',
+          message: 'ستون‌های پروفایل وجود ندارند. در backend اجرا کنید: npx prisma migrate deploy && npx prisma generate',
+        });
+      }
+      throw err;
+    }
+    return { ok: true };
+  }
+
+  async changePassword(
+    tenant: TenantContext,
+    req: { user?: { userId: string; tenantId: string } },
+    body: { currentPassword?: string; newPassword?: string },
+  ) {
+    const u = req.user;
+    if (!u || u.tenantId !== tenant.id) {
+      throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
+    }
+    const currentPassword = body.currentPassword;
+    const newPassword = body.newPassword?.trim();
+    if (!currentPassword || !newPassword || newPassword.length < 8) {
+      throw new UnauthorizedException({
+        code: 'INVALID_INPUT',
+        message: 'currentPassword and newPassword (min 8 chars) required',
+      });
+    }
+    const user = await this.prisma.user.findFirst({
+      where: { id: u.userId, status: 'ACTIVE' },
+      select: { passwordHash: true },
+    });
+    if (!user?.passwordHash) {
+      throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'User has no password set' });
+    }
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!ok) {
+      throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'رمز عبور فعلی اشتباه است' });
+    }
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await this.prisma.user.update({
+      where: { id: u.userId },
+      data: { passwordHash },
+    });
+    return { ok: true };
   }
 
   async createDemoSession(tenant: TenantContext, _res: Response) {

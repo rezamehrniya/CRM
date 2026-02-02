@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, User, Phone, Mail, Building2, ArrowRight } from 'lucide-react';
 import { apiGet } from '@/lib/api';
+import { digitsToFa } from '@/lib/numbers';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,12 +13,17 @@ import { ErrorPage } from '@/components/error-page';
 
 type Contact = {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   phone?: string | null;
   email?: string | null;
   companyId?: string | null;
   company?: { id: string; name: string } | null;
 };
+
+function contactFullName(c: { firstName: string; lastName: string }): string {
+  return [c.firstName, c.lastName].filter(Boolean).join(' ').trim() || 'مخاطب';
+}
 
 export default function ContactDetail() {
   const { tenantSlug, id } = useParams<{ tenantSlug: string; id: string }>();
@@ -78,7 +84,7 @@ export default function ContactDetail() {
         </Link>
         <ChevronLeft className="size-4 shrink-0" aria-hidden />
         <span className="text-foreground font-medium truncate max-w-[180px]">
-          {loading ? '…' : contact?.fullName ?? 'مخاطب'}
+          {loading ? '…' : contact ? contactFullName(contact) : 'مخاطب'}
         </span>
       </nav>
 
@@ -97,7 +103,7 @@ export default function ContactDetail() {
                   <User className="size-6" aria-hidden />
                 </div>
                 <div>
-                  <h1 className="text-title-lg font-title">{contact.fullName}</h1>
+                  <h1 className="text-title-lg font-title">{contactFullName(contact)}</h1>
                   <p className="text-sm text-muted-foreground">مخاطب</p>
                 </div>
               </div>
@@ -117,7 +123,7 @@ export default function ContactDetail() {
                   <Phone className="size-5 text-muted-foreground shrink-0" aria-hidden />
                   <div>
                     <dt className="text-xs text-muted-foreground">تلفن</dt>
-                    <dd className="font-medium fa-num">{contact.phone}</dd>
+                    <dd className="font-medium fa-num">{contact.phone != null && contact.phone !== '' ? digitsToFa(contact.phone) : '—'}</dd>
                   </div>
                 </div>
               )}
