@@ -367,7 +367,7 @@ export default function Leads() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="lead-form-title" className="text-lg font-semibold mb-4">
-              {drawer ? 'ویرایش لید' : 'لید جدید'}
+              {drawer ? `ویرایش لید: ${leadFullName(drawer)}` : 'لید جدید'}
             </h2>
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
