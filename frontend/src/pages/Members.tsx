@@ -1,6 +1,6 @@
 /**
  * صفحهٔ مدیریت اعضا — فقط برای OWNER.
- * فقط شماره تلفن پذیرفته می‌شود؛ شماره تلفن به‌عنوان نام کاربری (برای ورود) استفاده می‌شود.
+ * افزودن عضو با نام، نام خانوادگی، شماره تلفن و نقش.
  */
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { UserCog, Users, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { apiGet, apiPost } from '@/lib/api';
 import { digitsToFa } from '@/lib/numbers';
+import { getUserDisplayName } from '@/lib/user-display';
 import { ErrorPage } from '@/components/error-page';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +24,8 @@ type Member = {
     id: string;
     email: string | null;
     phone: string | null;
+    firstName: string | null;
+    lastName: string | null;
     status: string;
   };
 };
@@ -34,8 +37,11 @@ export default function Members() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addFirstName, setAddFirstName] = useState('');
+  const [addLastName, setAddLastName] = useState('');
   const [addPhone, setAddPhone] = useState('');
   const [addPassword, setAddPassword] = useState('');
+  const [addRole, setAddRole] = useState<'MEMBER' | 'OWNER'>('MEMBER');
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
@@ -58,8 +64,14 @@ export default function Members() {
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError(null);
+    const firstName = addFirstName.trim();
+    const lastName = addLastName.trim();
     const phone = addPhone.trim();
     const password = addPassword.trim();
+    if (!firstName || !lastName) {
+      setAddError('نام و نام خانوادگی الزامی است.');
+      return;
+    }
     if (!phone) {
       setAddError('شماره تلفن الزامی است.');
       return;
@@ -70,9 +82,12 @@ export default function Members() {
     }
     setAddSaving(true);
     try {
-      await apiPost('/settings/members', { phone, password });
+      await apiPost('/settings/members', { firstName, lastName, phone, password, role: addRole });
+      setAddFirstName('');
+      setAddLastName('');
       setAddPhone('');
       setAddPassword('');
+      setAddRole('MEMBER');
       refetch();
     } catch (err: unknown) {
       setAddError(err instanceof Error ? err.message : 'خطا در افزودن عضو');
@@ -112,13 +127,37 @@ export default function Members() {
       <PageBreadcrumb current="مدیریت اعضا" />
       <h1 className="text-title-lg font-title">مدیریت اعضا</h1>
       <p className="text-sm text-muted-foreground">
-        فقط با شماره تلفن عضو اضافه می‌شود؛ شماره تلفن به‌عنوان نام کاربری برای ورود استفاده می‌شود.
+        افزودن عضو با نام، نام خانوادگی و شماره تلفن. شماره تلفن برای ورود استفاده می‌شود.
       </p>
 
-      {/* فرم افزودن عضو — فقط شماره تلفن + رمز اولیه */}
+      {/* فرم افزودن عضو */}
       <div className="glass-card rounded-card p-5 max-w-md">
         <h2 className="font-title text-base mb-3">افزودن عضو</h2>
         <form onSubmit={handleAddMember} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="member-firstName">نام</Label>
+              <Input
+                id="member-firstName"
+                type="text"
+                placeholder="نام"
+                value={addFirstName}
+                onChange={(e) => setAddFirstName(e.target.value)}
+                className="bg-card"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="member-lastName">نام خانوادگی</Label>
+              <Input
+                id="member-lastName"
+                type="text"
+                placeholder="نام خانوادگی"
+                value={addLastName}
+                onChange={(e) => setAddLastName(e.target.value)}
+                className="bg-card"
+              />
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="member-phone">شماره تلفن (نام کاربری ورود)</Label>
             <Input
@@ -129,6 +168,18 @@ export default function Members() {
               onChange={(e) => setAddPhone(e.target.value)}
               className="bg-card"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="member-role">نقش</Label>
+            <select
+              id="member-role"
+              value={addRole}
+              onChange={(e) => setAddRole(e.target.value as 'MEMBER' | 'OWNER')}
+              className="flex h-10 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm"
+            >
+              <option value="MEMBER">فروشنده</option>
+              <option value="OWNER">مدیر</option>
+            </select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="member-password">رمز عبور اولیه (حداقل ۸ کاراکتر)</Label>
@@ -196,16 +247,18 @@ export default function Members() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/40">
-                <th className="text-start p-2 font-medium">شماره تلفن (نام کاربری)</th>
-                <th className="text-start p-2 font-medium">نقش (دسترسی)</th>
+                <th className="text-start p-2 font-medium">نام و نام خانوادگی</th>
+                <th className="text-start p-2 font-medium">نقش</th>
+                <th className="text-start p-2 font-medium text-muted-foreground">موبایل</th>
                 <th className="text-start p-2 font-medium">وضعیت</th>
               </tr>
             </thead>
             <tbody>
               {members.map((m) => (
                 <tr key={m.id} className="border-b border-border">
-                  <td className="p-2 fa-num">{digitsToFa(m.user.phone ?? '')}</td>
+                  <td className="p-2 font-medium">{getUserDisplayName(m.user)}</td>
                   <td className="p-2">{roleLabel(m.role)}</td>
+                  <td className="p-2 fa-num text-muted-foreground">{digitsToFa(m.user.phone ?? '')}</td>
                   <td className="p-2">{statusLabel(m.status)}</td>
                 </tr>
               ))}

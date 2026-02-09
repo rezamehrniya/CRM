@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api';
 import { formatFaNum, digitsToFa } from '../lib/numbers';
+import { getUserDisplayName } from '@/lib/user-display';
 import { PageBreadcrumb } from '../components/PageBreadcrumb';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -18,6 +19,7 @@ type Contact = {
   email?: string | null;
   companyId?: string | null;
   company?: { id: string; name: string } | null;
+  owner?: { id: string; phone: string | null; firstName: string | null; lastName: string | null } | null;
 };
 
 export default function Contacts() {
@@ -33,7 +35,7 @@ export default function Contacts() {
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '' });
   const [saving, setSaving] = useState(false);
 
-  const pageSize = 25;
+  const pageSize = 50;
 
   useEffect(() => {
     setLoading(true);
@@ -161,13 +163,14 @@ export default function Contacts() {
                   <th className="text-start pe-4 ps-4 font-medium">نام خانوادگی</th>
                   <th className="text-start pe-4 ps-4 font-medium">تلفن</th>
                   <th className="text-start pe-4 ps-4 font-medium">ایمیل</th>
+                  <th className="text-start pe-4 ps-4 font-medium">مسئول</th>
                   <th className="text-start pe-4 ps-4 w-20">عملیات</th>
                 </tr>
               </thead>
               <tbody>
                 {data.data.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={6} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
                       مخاطبی یافت نشد.
                     </td>
                   </tr>
@@ -185,6 +188,7 @@ export default function Contacts() {
                     <td className="pe-4 ps-4">{c.lastName || '—'}</td>
                     <td className="pe-4 ps-4 fa-num">{digitsToFa(c.phone ?? '')}</td>
                     <td className="pe-4 ps-4">{c.email ?? '—'}</td>
+                    <td className="pe-4 ps-4">{getUserDisplayName(c.owner)}</td>
                     <td className="pe-4 ps-4 flex items-center gap-1">
                       <Link to={`${base}/contacts/${c.id}`} className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--bg-muted)]" aria-label="مشاهده" title="مشاهده">
                         <Eye className="size-4" />

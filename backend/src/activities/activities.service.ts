@@ -9,8 +9,10 @@ const activitySelect = {
   happenedAt: true,
   contactId: true,
   dealId: true,
+  createdByUserId: true,
   contact: { select: { id: true, firstName: true, lastName: true } },
   deal: { select: { id: true, title: true } },
+  createdBy: { select: { id: true, phone: true, firstName: true, lastName: true } },
 };
 
 @Injectable()

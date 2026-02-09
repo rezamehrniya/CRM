@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { apiGet, apiPost } from '@/lib/api';
 import { formatFaNum } from '@/lib/numbers';
+import { getUserDisplayName } from '@/lib/user-display';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ type ActivityItem = {
   happenedAt: string;
   contact?: { id: string; firstName: string; lastName: string } | null;
   deal?: { id: string; title: string } | null;
+  createdBy?: { id: string; phone: string | null; firstName: string | null; lastName: string | null } | null;
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -36,7 +38,7 @@ export default function Activity() {
   const [form, setForm] = useState({ type: 'NOTE', body: '', happenedAt: new Date().toISOString().slice(0, 16) });
   const [saving, setSaving] = useState(false);
 
-  const pageSize = 25;
+  const pageSize = 50;
 
   useEffect(() => {
     setLoading(true);
@@ -103,6 +105,7 @@ export default function Activity() {
                 <th className="text-start pe-4 ps-4 font-medium">نوع</th>
                 <th className="text-start pe-4 ps-4 font-medium">محتوا</th>
                 <th className="text-start pe-4 ps-4 font-medium">زمان</th>
+                <th className="text-start pe-4 ps-4 font-medium">ثبت‌کننده</th>
               </tr>
             </thead>
             <tbody>
@@ -111,6 +114,7 @@ export default function Activity() {
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-20" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-48" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-32" /></td>
+                  <td className="pe-4 ps-4"><Skeleton className="h-4 w-24" /></td>
                 </tr>
               ))}
             </tbody>
@@ -124,15 +128,16 @@ export default function Activity() {
             <table className="w-full min-w-[400px]">
               <thead>
                 <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
-                  <th className="text-start pe-4 ps-4 font-medium">نوع</th>
-                  <th className="text-start pe-4 ps-4 font-medium">محتوا</th>
-                  <th className="text-start pe-4 ps-4 font-medium">زمان</th>
-                </tr>
+<th className="text-start pe-4 ps-4 font-medium">نوع</th>
+                <th className="text-start pe-4 ps-4 font-medium">محتوا</th>
+                <th className="text-start pe-4 ps-4 font-medium">زمان</th>
+                <th className="text-start pe-4 ps-4 font-medium">ثبت‌کننده</th>
+              </tr>
               </thead>
               <tbody>
                 {data.data.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={4} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
                       فعالیتی ثبت نشده است.
                     </td>
                   </tr>
@@ -142,6 +147,7 @@ export default function Activity() {
                     <td className="pe-4 ps-4">{TYPE_LABELS[a.type] ?? a.type}</td>
                     <td className="pe-4 ps-4">{a.body ?? '—'}</td>
                     <td className="pe-4 ps-4"><JalaliDate value={a.happenedAt} /></td>
+                    <td className="pe-4 ps-4">{getUserDisplayName(a.createdBy)}</td>
                   </tr>
                 ))}
               </tbody>

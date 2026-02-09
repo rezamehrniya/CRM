@@ -13,6 +13,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
+        // لوکال: backend روی 3000 | داکر: backend روی 3001 → VITE_API_PROXY_TARGET=http://localhost:3001
         target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:3000',
         changeOrigin: true,
       },

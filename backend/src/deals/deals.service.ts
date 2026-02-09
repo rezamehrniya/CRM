@@ -10,11 +10,13 @@ const dealSelect = {
   pipelineId: true,
   contactId: true,
   companyId: true,
+  ownerUserId: true,
   expectedCloseDate: true,
   stage: { select: { id: true, name: true } },
   pipeline: { select: { id: true, name: true } },
   contact: { select: { id: true, firstName: true, lastName: true } },
   company: { select: { id: true, name: true } },
+  owner: { select: { id: true, phone: true, firstName: true, lastName: true } },
 };
 
 @Injectable()

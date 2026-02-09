@@ -1,7 +1,8 @@
 # Sakhtar CRM — Backend, Frontend, PostgreSQL
-# Usage: docker compose up -d
+# Usage: docker compose build && docker compose up -d
+# پس از پاک شدن کانتینر/ولوم: همان دستورات؛ backend خودش migrate + seed را اجرا می‌کند.
 # API روی host: http://localhost:3001  (داخل شبکه داکر backend:3000)  App: http://localhost:8080
-# Postgres روی host: پورت 15432 (اگر 5432/5433 لوکال اشغال است)
+# Postgres روی host: پورت 15432 (برای اتصال از host مثلاً seed دستی)
 
 services:
   postgres:

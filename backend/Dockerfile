@@ -21,8 +21,9 @@ ENV NODE_ENV=production
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/tsconfig.json ./
 COPY --from=builder /app/prisma ./prisma
 EXPOSE 3000
 RUN addgroup -g 1001 -S nodejs && adduser -S nest -u 1001
 USER nest
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node dist/main.js"]

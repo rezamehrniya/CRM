@@ -15,6 +15,7 @@
     "backend:test": "cd backend && npm run test",
     "backend:prisma:generate": "cd backend && npx prisma generate",
     "backend:prisma:migrate": "cd backend && npx prisma migrate dev",
+    "backend:prisma:seed": "cd backend && npx prisma db seed",
     "frontend:install": "cd frontend && npm install",
     "frontend:dev": "cd frontend && npm run dev",
     "frontend:build": "cd frontend && npm run build",
@@ -28,6 +29,12 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
   },
-  "keywords": ["crm", "sakhtar"],
-  "license": "UNLICENSED"
+  "keywords": [
+    "crm",
+    "sakhtar"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "recharts": "^3.7.0"
+  }
 }

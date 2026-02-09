@@ -14,7 +14,7 @@ export class SettingsService {
       where: { tenantId: tenant.id },
       include: {
         user: {
-          select: { id: true, email: true, phone: true, status: true },
+          select: { id: true, email: true, phone: true, firstName: true, lastName: true, status: true },
         },
       },
       orderBy: [{ role: 'asc' }, { id: 'asc' }],
@@ -22,14 +22,16 @@ export class SettingsService {
   }
 
   /**
-   * افزودن عضو با شماره تلفن — شماره تلفن به‌عنوان نام کاربری (برای ورود) استفاده می‌شود.
+   * افزودن عضو: شماره تلفن + نام و نام خانوادگی الزامی است.
    */
   async addMember(
     tenant: TenantContext,
-    body: { phone: string; password: string; role?: string },
+    body: { phone: string; password: string; role?: string; firstName?: string | null; lastName?: string | null; email?: string | null },
   ) {
     const phone = body.phone?.trim();
     const password = body.password?.trim();
+    const firstName = body.firstName?.trim() || null;
+    const lastName = body.lastName?.trim() || null;
     if (!phone) {
       throw new BadRequestException({ code: 'INVALID_INPUT', message: 'شماره تلفن الزامی است.' });
     }
@@ -37,6 +39,12 @@ export class SettingsService {
       throw new BadRequestException({
         code: 'INVALID_INPUT',
         message: 'رمز عبور اولیه حداقل ۸ کاراکتر باشد.',
+      });
+    }
+    if (!firstName || !lastName) {
+      throw new BadRequestException({
+        code: 'INVALID_INPUT',
+        message: 'نام و نام خانوادگی الزامی است.',
       });
     }
     const role = body.role === 'OWNER' ? 'OWNER' : 'MEMBER';
@@ -50,16 +58,29 @@ export class SettingsService {
       user = await this.prisma.user.create({
         data: {
           phone,
+          firstName,
+          lastName,
+          email: body.email?.trim() || null,
           passwordHash,
           status: 'ACTIVE',
         },
       });
-    } else if (!user.passwordHash) {
-      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-      user = await this.prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHash },
-      });
+    } else {
+      const updateData: { passwordHash?: string; firstName?: string | null; lastName?: string | null; email?: string | null } = {};
+      if (!user.passwordHash) {
+        updateData.passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      }
+      if (user.firstName == null || user.lastName == null) {
+        updateData.firstName = firstName;
+        updateData.lastName = lastName;
+        if (body.email !== undefined) updateData.email = body.email?.trim() || null;
+      }
+      if (Object.keys(updateData).length > 0) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: updateData,
+        });
+      }
     }
 
     const existing = await this.prisma.membership.findUnique({

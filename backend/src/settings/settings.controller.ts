@@ -32,7 +32,7 @@ export class SettingsController {
   @Post('members')
   addMember(
     @Req() req: Request,
-    @Body() body: { phone?: string; password?: string; role?: string },
+    @Body() body: { phone?: string; password?: string; role?: string; firstName?: string; lastName?: string; email?: string },
   ) {
     const tenant = (req as any).tenant;
     if (!tenant) throw new Error('Tenant not found');
@@ -40,6 +40,9 @@ export class SettingsController {
       phone: body.phone ?? '',
       password: body.password ?? '',
       role: body.role,
+      firstName: body.firstName?.trim(),
+      lastName: body.lastName?.trim(),
+      email: body.email?.trim(),
     });
   }
 }
