@@ -33,3 +33,6 @@ frontend/dist/
 
 # Optional: keep OpenSpec-main or ignore (uncomment to ignore)
 # OpenSpec-main/
+
+# Runtime uploads
+backend/uploads/
