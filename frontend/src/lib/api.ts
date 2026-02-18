@@ -1,16 +1,30 @@
-const TOKEN_KEY = 'sakhtar_access_token';
+// Support multiple token keys for backward compatibility across deployments
+const TOKEN_KEYS = ['access_token', 'accessToken', 'sakhtar_access_token'] as const;
+const PRIMARY_TOKEN_KEY = 'access_token';
+const COMPAT_TOKEN_KEY = 'accessToken';
 
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return sessionStorage.getItem(TOKEN_KEY);
+  for (const key of TOKEN_KEYS) {
+    const value = localStorage.getItem(key) || sessionStorage.getItem(key);
+    if (value && value.trim()) return value;
+  }
+  return null;
 }
 
 export function setAccessToken(token: string): void {
-  sessionStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(PRIMARY_TOKEN_KEY, token);
+  localStorage.setItem(COMPAT_TOKEN_KEY, token);
+  sessionStorage.removeItem(PRIMARY_TOKEN_KEY);
+  sessionStorage.removeItem(COMPAT_TOKEN_KEY);
+  sessionStorage.removeItem('sakhtar_access_token');
 }
 
 export function clearAccessToken(): void {
-  sessionStorage.removeItem(TOKEN_KEY);
+  for (const key of TOKEN_KEYS) {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  }
 }
 
 const getBase = () => {
