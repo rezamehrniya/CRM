@@ -6,6 +6,10 @@ import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+import express from 'express';
+
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true }));
 
   // 🔥 مهم — فعال کردن body parser صریح
   app.use(express.json({ limit: '5mb' }));
