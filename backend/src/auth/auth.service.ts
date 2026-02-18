@@ -45,8 +45,8 @@ export class AuthService {
     body: { phoneOrEmail?: string; password?: string },
     res: Response,
   ) {
-    const identifier = typeof body?.phoneOrEmail === 'string' ? body.phoneOrEmail.trim() : '';
-    const password = body?.password;
+    const identifier = body.phoneOrEmail?.trim();
+    const password = body.password;
 
     if (!identifier || !password) {
       throw new UnauthorizedException({ code: 'INVALID_INPUT', message: 'identifier and password required' });

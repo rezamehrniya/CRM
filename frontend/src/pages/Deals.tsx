@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { formatFaNum } from '@/lib/numbers';
-import { getUserDisplayName } from '@/lib/user-display';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,6 @@ type Deal = {
   pipeline?: { id: string; name: string };
   contact?: { id: string; firstName: string; lastName: string } | null;
   company?: { id: string; name: string } | null;
-  owner?: { id: string; phone: string | null; firstName: string | null; lastName: string | null } | null;
 };
 
 export default function Deals() {
@@ -43,7 +41,7 @@ export default function Deals() {
   const [form, setForm] = useState({ title: '', amount: '', stageId: '', pipelineId: '' });
   const [saving, setSaving] = useState(false);
 
-  const pageSize = 50;
+  const pageSize = 25;
 
   useEffect(() => {
     setLoading(true);
@@ -171,7 +169,6 @@ export default function Deals() {
                 <th className="text-start pe-4 ps-4 font-medium">عنوان</th>
                 <th className="text-start pe-4 ps-4 font-medium">مرحله</th>
                 <th className="text-start pe-4 ps-4 font-medium">مبلغ</th>
-                <th className="text-start pe-4 ps-4 font-medium">مسئول</th>
                 <th className="text-start pe-4 ps-4 w-20">عملیات</th>
               </tr>
             </thead>
@@ -181,7 +178,6 @@ export default function Deals() {
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-36" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-24" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-20" /></td>
-                  <td className="pe-4 ps-4"><Skeleton className="h-4 w-24" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-8 w-16" /></td>
                 </tr>
               ))}
@@ -196,17 +192,16 @@ export default function Deals() {
             <table className="w-full min-w-[500px]">
               <thead>
                 <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
-<th className="text-start pe-4 ps-4 font-medium">عنوان</th>
-                <th className="text-start pe-4 ps-4 font-medium">مرحله</th>
-                <th className="text-start pe-4 ps-4 font-medium">مبلغ</th>
-                <th className="text-start pe-4 ps-4 font-medium">مسئول</th>
-                <th className="text-start pe-4 ps-4 w-20">عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.data.length === 0 && (
+                  <th className="text-start pe-4 ps-4 font-medium">عنوان</th>
+                  <th className="text-start pe-4 ps-4 font-medium">مرحله</th>
+                  <th className="text-start pe-4 ps-4 font-medium">مبلغ</th>
+                  <th className="text-start pe-4 ps-4 w-20">عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.data.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={4} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
                       معامله‌ای یافت نشد.
                     </td>
                   </tr>
@@ -220,7 +215,6 @@ export default function Deals() {
                     </td>
                     <td className="pe-4 ps-4">{d.stage?.name ?? '—'}</td>
                     <td className="pe-4 ps-4 fa-num">{formatAmount(d.amount)}</td>
-                    <td className="pe-4 ps-4">{getUserDisplayName(d.owner)}</td>
                     <td className="pe-4 ps-4 flex items-center gap-1">
                       <Link to={`${base}/deals/${d.id}`} className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--bg-muted)]" aria-label="مشاهده" title="مشاهده">
                         <Eye className="size-4" />

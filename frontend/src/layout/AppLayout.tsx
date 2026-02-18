@@ -110,29 +110,6 @@ export default function AppLayout() {
 
   const currentPath = location.pathname;
 
-  // تنظیم عنوان تب مرورگر بر اساس صفحهٔ فعلی و منو
-  useEffect(() => {
-    const basePath = `/t/${tenantSlug}/app`;
-    const path = location.pathname;
-    let activeLabel: string | undefined;
-    for (const item of NAV_ITEMS) {
-      const fullHref = `${basePath}/${item.href}`;
-      const isDashboard =
-        item.href === 'dashboard' && (path === basePath || path === `${basePath}/`);
-      const isExact = path === fullHref;
-      const isChild = path.startsWith(`${fullHref}/`);
-      if (isDashboard || isExact || isChild) {
-        activeLabel = item.label;
-        break;
-      }
-    }
-    if (activeLabel) {
-      document.title = `${activeLabel} – Sakhtar CRM`;
-    } else {
-      document.title = 'Sakhtar CRM';
-    }
-  }, [location.pathname, tenantSlug]);
-
   return (
     <div className="min-h-screen flex bg-[var(--bg-default)] text-foreground">
       {/* Backdrop موبایل */}

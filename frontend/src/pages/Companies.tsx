@@ -31,7 +31,7 @@ export default function Companies() {
   const [form, setForm] = useState({ name: '', phone: '', website: '' });
   const [saving, setSaving] = useState(false);
 
-  const pageSize = 50;
+  const pageSize = 25;
 
   useEffect(() => {
     setLoading(true);

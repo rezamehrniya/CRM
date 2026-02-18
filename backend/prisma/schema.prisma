@@ -1,7 +1,5 @@
 generator client {
-  provider      = "prisma-client-js"
-  // native = لوکال؛ debian-openssl-3.0.x = داکر با node:bookworm-slim؛ linux-musl-openssl-3.0.x = Alpine
-  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -34,21 +32,16 @@ model User {
   id           String   @id @default(cuid())
   phone        String?
   email        String?
-  firstName    String?  // نام — اجباری برای عضو جدید
-  lastName     String?  // نام خانوادگی — اجباری برای عضو جدید
+  firstName    String?  // نام — اجباری پس از اولین ورود
+  lastName     String?  // نام خانوادگی — اجباری پس از اولین ورود
   displayName  String?
   avatarUrl    String?
   passwordHash String?
   createdAt    DateTime @default(now())
   status       String   // ACTIVE, DISABLED
 
-  memberships       Membership[]
-  sessions          Session[]
-  contactsOwned     Contact[]   @relation("ContactOwner")
-  dealsOwned        Deal[]      @relation("DealOwner")
-  leadsOwned        Lead[]      @relation("LeadOwner")
-  activitiesCreated Activity[]  @relation("ActivityCreator")
-  tasksAssigned     Task[]      @relation("TaskAssignee")
+  memberships Membership[]
+  sessions    Session[]
 }
 
 model Session {
@@ -90,7 +83,6 @@ model Contact {
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company  Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  owner    User?     @relation("ContactOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   deals    Deal[]
   activities Activity[]
   tasks    Task[]
@@ -147,7 +139,6 @@ model Deal {
   pipeline Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   contact  Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
   company  Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  owner    User?         @relation("DealOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   activities Activity[]
   tasks    Task[]
 }
@@ -162,10 +153,9 @@ model Activity {
   happenedAt      DateTime
   createdByUserId String?
 
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
-  createdBy User?   @relation("ActivityCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
 }
 
 model Lead {
@@ -185,7 +175,6 @@ model Lead {
   updatedAt   DateTime  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  owner  User?  @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
 }
 
 model Task {
@@ -198,10 +187,9 @@ model Task {
   contactId        String?
   dealId           String?
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  contact     Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  deal        Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
-  assignedTo  User?    @relation("TaskAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
 }
 
 model AuditLog {

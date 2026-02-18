@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, CheckSquare, User, HandCoins, ArrowRight } from 'lucide-react';
 import { apiGet } from '@/lib/api';
-import { getUserDisplayName } from '@/lib/user-display';
 import { JalaliDate } from '@/components/ui/jalali-date';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorPage } from '@/components/error-page';
@@ -17,7 +16,6 @@ type TaskDetailData = {
   status: string;
   contact?: { id: string; firstName: string; lastName: string } | null;
   deal?: { id: string; title: string } | null;
-  assignedTo?: { id: string; phone: string | null; firstName: string | null; lastName: string | null } | null;
 };
 
 export default function TaskDetail() {
@@ -152,13 +150,6 @@ export default function TaskDetail() {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-3">
-                <User className="size-5 text-muted-foreground shrink-0" aria-hidden />
-                <div>
-                  <dt className="text-xs text-muted-foreground">مسئول</dt>
-                  <dd>{getUserDisplayName(task.assignedTo)}</dd>
-                </div>
-              </div>
             </dl>
           </div>
 

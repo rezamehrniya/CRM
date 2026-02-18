@@ -13,7 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { JalaliDate } from '@/components/ui/jalali-date';
 import { JalaliDateInput } from '@/components/ui/jalali-date-input';
-import { getUserDisplayName } from '@/lib/user-display';
 import { Pencil, Trash2 } from 'lucide-react';
 
 type Lead = {
@@ -27,8 +26,6 @@ type Lead = {
   status: string;
   notes?: string | null;
   followUpAt?: string | null;
-  ownerUserId?: string | null;
-  owner?: { id: string; phone: string | null; firstName: string | null; lastName: string | null } | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 };
@@ -81,7 +78,7 @@ export default function Leads() {
   });
   const [saving, setSaving] = useState(false);
 
-  const pageSize = 50;
+  const pageSize = 25;
 
   useEffect(() => {
     setLoading(true);
@@ -256,7 +253,7 @@ export default function Leads() {
       {!loading && data && (
         <>
           <div className="glass-table-surface overflow-x-auto rounded-card">
-            <table className="w-full min-w-[780px]">
+            <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="border-b border-[var(--border-default)] h-11 bg-[var(--bg-toolbar)]">
                   <th className="text-start pe-4 ps-4 font-medium">نام</th>
@@ -265,7 +262,6 @@ export default function Leads() {
                   <th className="text-start pe-4 ps-4 font-medium">شرکت</th>
                   <th className="text-start pe-4 ps-4 font-medium">منبع</th>
                   <th className="text-start pe-4 ps-4 font-medium">وضعیت</th>
-                  <th className="text-start pe-4 ps-4 font-medium">مسئول</th>
                   <th className="text-start pe-4 ps-4 font-medium">تاریخ پیگیری</th>
                   <th className="text-start pe-4 ps-4 w-24">عملیات</th>
                 </tr>
@@ -273,7 +269,7 @@ export default function Leads() {
               <tbody>
                 {data.data.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={8} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
                       لیدی یافت نشد.
                     </td>
                   </tr>
@@ -292,7 +288,6 @@ export default function Leads() {
                     <td className="pe-4 ps-4 text-sm">{lead.companyName ?? '—'}</td>
                     <td className="pe-4 ps-4 text-sm">{lead.source ?? '—'}</td>
                     <td className="pe-4 ps-4 text-sm">{statusLabel(lead.status)}</td>
-                    <td className="pe-4 ps-4 text-sm">{getUserDisplayName(lead.owner)}</td>
                     <td className="pe-4 ps-4">
                       <JalaliDate value={lead.followUpAt} dateOnly />
                     </td>

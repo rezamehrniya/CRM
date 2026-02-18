@@ -11,7 +11,6 @@ const contactSelect = {
   companyId: true,
   ownerUserId: true,
   company: { select: { id: true, name: true } },
-  owner: { select: { id: true, phone: true, firstName: true, lastName: true } },
 };
 
 @Injectable()

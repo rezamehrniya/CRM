@@ -1,232 +1,249 @@
-import * as React from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-
-import { setAccessToken } from '@/lib/api';
-import { useAuth } from '@/contexts/auth-context';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-
-const DEMO_EMAIL = 'owner@demo.com';
-const DEMO_PASSWORD = '12345678';
+// frontend/src/pages/Login.tsx
+import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 /**
- * Route: /t/:tenantSlug/app/login
- * API: POST /api/t/:tenantSlug/auth/login
- * برای tenant با slug `demo`: پنل مدیر فروش — ورود خودکار با کاربر دمو (بدون فرم).
+ * Assumptions (adjust if your project differs):
+ * - API: POST /api/t/:tenantSlug/auth/login
+ * - Returns JSON: { accessToken: string } (or { token: string })
+ * - On success you want to navigate to "/t/:tenantSlug/app" (adjust below)
  */
-export default function LoginPage() {
-  const { tenantSlug } = useParams<{ tenantSlug: string }>();
+
+// Demo credentials (safe defaults; can be overridden via Vite env)
+const DEMO_TENANT = "demo";
+const DEMO_EMAIL =
+  (import.meta as any).env?.VITE_DEMO_EMAIL || "owner@demo.com";
+const DEMO_PASSWORD =
+  (import.meta as any).env?.VITE_DEMO_PASSWORD || "12345678";
+
+function normalizeSlug(input: string) {
+  return input.trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+function safeJsonParse(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+export default function Login() {
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const [identifier, setIdentifier] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [remember, setRemember] = React.useState(true);
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [autoLoginPending, setAutoLoginPending] = React.useState(false);
-  const autoLoginAttempted = React.useRef(false);
-  const { refetch } = useAuth();
+  const [tenantSlug, setTenantSlug] = useState<string>("");
+  const [identifier, setIdentifier] = useState<string>(""); // phoneOrEmail
+  const [password, setPassword] = useState<string>("");
 
-  const redirectTo = (location.state as { from?: string })?.from ?? (tenantSlug ? `/t/${tenantSlug}/app/dashboard` : '/');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
 
-  React.useEffect(() => {
-    document.documentElement.setAttribute('dir', 'rtl');
-  }, []);
+  const apiUrl = useMemo(() => {
+    const slug = normalizeSlug(tenantSlug);
+    if (!slug) return "";
+    return `/api/t/${encodeURIComponent(slug)}/auth/login`;
+  }, [tenantSlug]);
 
-  // ورود خودکار پنل مدیر فروش (دمو): فقط برای tenant با slug `demo`، یک بار
-  React.useEffect(() => {
-    if (tenantSlug !== 'demo' || autoLoginAttempted.current) return;
-    autoLoginAttempted.current = true;
-    setAutoLoginPending(true);
-    setError(null);
-
-    (async () => {
-      try {
-        const res = await fetch(`/api/t/demo/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            phoneOrEmail: DEMO_EMAIL,
-            password: DEMO_PASSWORD,
-            remember: true,
-          }),
-        });
-
-        const data = (await res.json().catch(() => ({}))) as {
-          message?: string;
-          error?: string;
-          accessToken?: string;
-        };
-
-        if (res.ok && data.accessToken) {
-          setAccessToken(data.accessToken);
-          await refetch();
-          navigate(redirectTo, { replace: true });
-          return;
-        }
-      } catch {
-        /**/
-      }
-      setAutoLoginPending(false);
-      setError('ورود خودکار در دسترس نیست. با owner@demo.com و رمز 12345678 وارد پنل مدیر فروش شوید.');
-      if (tenantSlug === 'demo') {
-        setIdentifier(DEMO_EMAIL);
-        setPassword(DEMO_PASSWORD);
-      }
-    })();
-  }, [tenantSlug, navigate, redirectTo, refetch]);
-
-  async function onSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setError("");
 
-    if (!tenantSlug) {
-      setError('سازمان مشخص نیست. لطفاً از لینک صحیح وارد شوید.');
-      return;
-    }
-    if (!identifier.trim() || !password) {
-      setError('لطفاً موبایل/ایمیل و رمز عبور را وارد کنید.');
-      return;
-    }
+    const slug = normalizeSlug(tenantSlug);
+    if (!slug) return setError("نام سازمان (Tenant) را وارد کنید.");
+    if (!identifier.trim()) return setError("شماره موبایل یا ایمیل را وارد کنید.");
+    if (!password) return setError("رمز عبور را وارد کنید.");
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/t/${encodeURIComponent(tenantSlug)}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const res = await fetch(`/api/t/${encodeURIComponent(slug)}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // for refresh cookie (if backend sets it)
         body: JSON.stringify({
           phoneOrEmail: identifier.trim(),
           password,
-          remember,
         }),
       });
 
-      const data = (await res.json().catch(() => ({}))) as {
-        message?: string;
-        error?: string;
-        accessToken?: string;
-      };
+      const text = await res.text();
+      const data = safeJsonParse(text) || {};
 
       if (!res.ok) {
-        const msg = data?.message ?? data?.error ?? 'ورود ناموفق بود. دوباره تلاش کنید.';
+        const msg =
+          data?.message ||
+          data?.error ||
+          `خطا در ورود (${res.status})`;
         throw new Error(msg);
       }
 
-      if (data.accessToken) {
-        setAccessToken(data.accessToken);
+      const accessToken = data?.accessToken || data?.token;
+      if (accessToken) {
+        localStorage.setItem("accessToken", accessToken);
       }
 
-      navigate(redirectTo, { replace: true });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'خطای غیرمنتظره رخ داد.');
+      // ✅ Adjust this route if your app path differs
+      // Common patterns:
+      // - `/t/${slug}/app/dashboard`
+      // - `/t/${slug}/app`
+      // - `/app` (if slug is stored elsewhere)
+      navigate(`/t/${slug}/app`);
+    } catch (err: any) {
+      setError(err?.message || "خطای نامشخص در ورود");
     } finally {
       setLoading(false);
     }
   }
 
+  function fillDemo() {
+    setTenantSlug(DEMO_TENANT);
+    setIdentifier(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
+    setError("");
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--bg-default)] text-foreground flex flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <img src="/sakhtarlogo.png" alt="" className="h-10 w-10 object-contain shrink-0" />
-          <span className="text-xl font-semibold text-foreground">ساختار</span>
+    <div style={styles.page}>
+      <div style={styles.card}>
+        <div style={styles.header}>
+          <div>
+            <div style={styles.title}>ورود به Sakhtar CRM</div>
+            <div style={styles.subtitle}>Tenant را وارد کنید و وارد پنل شوید.</div>
+          </div>
+
+          <button type="button" onClick={fillDemo} style={styles.demoBtn}>
+            ورود دمو
+          </button>
         </div>
 
-        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-default)] p-5 shadow-sm">
-          {autoLoginPending ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-              <Loader2 className="size-8 animate-spin" aria-hidden />
-              <p className="text-sm">در حال ورود...</p>
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <label style={styles.label}>
+            Tenant (نام سازمان)
+            <input
+              value={tenantSlug}
+              onChange={(e) => setTenantSlug(e.target.value)}
+              placeholder="مثلاً: demo یا acme"
+              autoComplete="organization"
+              style={styles.input}
+            />
+          </label>
+
+          <label style={styles.label}>
+            موبایل یا ایمیل
+            <input
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="0912... یا email@example.com"
+              autoComplete="username"
+              style={styles.input}
+            />
+          </label>
+
+          <label style={styles.label}>
+            رمز عبور
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="********"
+              autoComplete="current-password"
+              style={styles.input}
+            />
+          </label>
+
+          {apiUrl ? (
+            <div style={styles.hint}>
+              API: <code style={styles.code}>{apiUrl}</code>
             </div>
-          ) : (
-            <>
-              {error && (
-                <p className="text-xs text-destructive mb-3 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
-                  {error}
-                </p>
-              )}
+          ) : null}
 
-              {tenantSlug === 'demo' && (
-                <button
-                  type="button"
-                  className="text-xs text-muted-foreground hover:text-foreground mb-3 underline"
-                  onClick={() => {
-                    setIdentifier(DEMO_EMAIL);
-                    setPassword(DEMO_PASSWORD);
-                    setError(null);
-                  }}
-                >
-                  استفاده از دمو (owner@demo.com)
-                </button>
-              )}
+          {error ? <div style={styles.error}>{error}</div> : null}
 
-              <form onSubmit={onSubmit} className="space-y-3">
-                <div>
-                  <Label htmlFor="identifier" className="text-xs">موبایل یا ایمیل</Label>
-                  <Input
-                    id="identifier"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="موبایل یا ایمیل"
-                    autoComplete="username"
-                    className="mt-1 h-10 rounded-lg text-left border-2 border-[#94A3B8] dark:border-[#475569] bg-[var(--bg-default)] focus-visible:border-[#64748B] dark:focus-visible:border-[#64748B]"
-                  />
-                </div>
+          <button type="submit" disabled={loading} style={styles.submit}>
+            {loading ? "در حال ورود..." : "ورود"}
+          </button>
+        </form>
 
-                <div>
-                  <Label htmlFor="password" className="text-xs">رمز عبور</Label>
-                  <div className="relative mt-1">
-                    <Input
-                      id="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="رمز عبور"
-                      autoComplete="current-password"
-                      className="h-10 rounded-lg ps-10 text-left border-2 border-[#94A3B8] dark:border-[#475569] bg-[var(--bg-default)] focus-visible:border-[#64748B] dark:focus-visible:border-[#64748B]"
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 start-0 flex items-center justify-center w-10 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowPassword((s) => !s)}
-                      aria-label={showPassword ? 'پنهان کردن رمز' : 'نمایش رمز'}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <label className="flex items-center gap-2 text-xs cursor-pointer text-muted-foreground">
-                  <Checkbox checked={remember} onCheckedChange={(v) => setRemember(Boolean(v))} className="size-3.5" />
-                  مرا به خاطر بسپار
-                </label>
-
-                <Button
-                  type="submit"
-                  className="h-10 w-full rounded-lg font-medium"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      ورود...
-                    </span>
-                  ) : (
-                    'ورود'
-                  )}
-                </Button>
-              </form>
-            </>
-          )}
+        <div style={styles.footer}>
+          <div style={styles.footerText}>
+            اگر Tenant را نمی‌دانید، از ادمین فروش دریافت کنید.
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    background: "#0b1220",
+  },
+  card: {
+    width: "100%",
+    maxWidth: 520,
+    background: "#0f1b33",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 14,
+    padding: 18,
+    color: "white",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+  },
+  header: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 14,
+  },
+  title: { fontSize: 18, fontWeight: 800 },
+  subtitle: { fontSize: 12, opacity: 0.8, marginTop: 6 },
+  demoBtn: {
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(255,255,255,0.06)",
+    color: "white",
+    borderRadius: 10,
+    padding: "10px 12px",
+    cursor: "pointer",
+    fontSize: 12,
+    whiteSpace: "nowrap",
+  },
+  form: { display: "flex", flexDirection: "column", gap: 12 },
+  label: { display: "flex", flexDirection: "column", gap: 6, fontSize: 12 },
+  input: {
+    borderRadius: 10,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(0,0,0,0.25)",
+    color: "white",
+    padding: "12px 12px",
+    outline: "none",
+  },
+  hint: { fontSize: 12, opacity: 0.8 },
+  code: {
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+    fontSize: 12,
+    opacity: 0.9,
+  },
+  error: {
+    background: "rgba(255, 0, 0, 0.10)",
+    border: "1px solid rgba(255, 0, 0, 0.25)",
+    borderRadius: 10,
+    padding: "10px 12px",
+    fontSize: 12,
+  },
+  submit: {
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.16)",
+    background: "rgba(86, 182, 255, 0.18)",
+    color: "white",
+    padding: "12px 12px",
+    cursor: "pointer",
+    fontWeight: 700,
+    marginTop: 4,
+  },
+  footer: { marginTop: 12, opacity: 0.8 },
+  footerText: { fontSize: 12 },
+};

@@ -9,10 +9,8 @@ const taskSelect = {
   status: true,
   contactId: true,
   dealId: true,
-  assignedToUserId: true,
   contact: { select: { id: true, firstName: true, lastName: true } },
   deal: { select: { id: true, title: true } },
-  assignedTo: { select: { id: true, phone: true, firstName: true, lastName: true } },
 };
 
 @Injectable()

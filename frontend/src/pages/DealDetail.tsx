@@ -6,7 +6,6 @@ import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, HandCoins, User, Building2, ArrowRight } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 import { formatFaNum } from '@/lib/numbers';
-import { getUserDisplayName } from '@/lib/user-display';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorPage } from '@/components/error-page';
 
@@ -18,7 +17,6 @@ type DealDetailData = {
   pipeline?: { id: string; name: string };
   contact?: { id: string; firstName: string; lastName: string } | null;
   company?: { id: string; name: string } | null;
-  owner?: { id: string; phone: string | null; firstName: string | null; lastName: string | null } | null;
 };
 
 export default function DealDetail() {
@@ -154,13 +152,6 @@ export default function DealDetail() {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-3">
-                <User className="size-5 text-muted-foreground shrink-0" aria-hidden />
-                <div>
-                  <dt className="text-xs text-muted-foreground">مسئول</dt>
-                  <dd>{getUserDisplayName(deal.owner)}</dd>
-                </div>
-              </div>
             </dl>
           </div>
 

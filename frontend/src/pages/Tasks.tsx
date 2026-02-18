@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { JalaliDate } from '@/components/ui/jalali-date';
 import { JalaliDateInput } from '@/components/ui/jalali-date-input';
-import { getUserDisplayName } from '@/lib/user-display';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 
 type Task = {
@@ -22,7 +21,6 @@ type Task = {
   status: string;
   contact?: { id: string; firstName: string; lastName: string } | null;
   deal?: { id: string; title: string } | null;
-  assignedTo?: { id: string; phone: string | null; firstName: string | null; lastName: string | null } | null;
 };
 
 export default function Tasks() {
@@ -39,7 +37,7 @@ export default function Tasks() {
   const [form, setForm] = useState({ title: '', dueAt: '', status: 'OPEN' });
   const [saving, setSaving] = useState(false);
 
-  const pageSize = 50;
+  const pageSize = 25;
 
   useEffect(() => {
     setLoading(true);
@@ -152,7 +150,6 @@ export default function Tasks() {
                 <th className="text-start pe-4 ps-4 font-medium">عنوان</th>
                 <th className="text-start pe-4 ps-4 font-medium">موعد</th>
                 <th className="text-start pe-4 ps-4 font-medium">وضعیت</th>
-                <th className="text-start pe-4 ps-4 font-medium">مسئول</th>
                 <th className="text-start pe-4 ps-4 w-20">عملیات</th>
               </tr>
             </thead>
@@ -162,7 +159,6 @@ export default function Tasks() {
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-40" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-24" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-4 w-16" /></td>
-                  <td className="pe-4 ps-4"><Skeleton className="h-4 w-24" /></td>
                   <td className="pe-4 ps-4"><Skeleton className="h-8 w-16" /></td>
                 </tr>
               ))}
@@ -180,14 +176,13 @@ export default function Tasks() {
                   <th className="text-start pe-4 ps-4 font-medium">عنوان</th>
                   <th className="text-start pe-4 ps-4 font-medium">موعد</th>
                   <th className="text-start pe-4 ps-4 font-medium">وضعیت</th>
-                  <th className="text-start pe-4 ps-4 font-medium">مسئول</th>
                   <th className="text-start pe-4 ps-4 w-20">عملیات</th>
                 </tr>
               </thead>
               <tbody>
                 {data.data.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={4} className="pe-4 ps-4 py-8 text-center text-muted-foreground">
                       کاری یافت نشد.
                     </td>
                   </tr>
@@ -201,7 +196,6 @@ export default function Tasks() {
                     </td>
                     <td className="pe-4 ps-4"><JalaliDate value={t.dueAt} dateOnly /></td>
                     <td className="pe-4 ps-4">{t.status === 'DONE' ? 'انجام‌شده' : 'باز'}</td>
-                    <td className="pe-4 ps-4">{getUserDisplayName(t.assignedTo)}</td>
                     <td className="pe-4 ps-4 flex items-center gap-1">
                       <Link to={`${base}/tasks/${t.id}`} className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--bg-muted)]" aria-label="مشاهده" title="مشاهده">
                         <Eye className="size-4" />

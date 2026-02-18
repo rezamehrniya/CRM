@@ -1,21 +1,27 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { AllExceptionsFilter } from './common/http-exception.filter';
+import * as express from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.useGlobalFilters(new AllExceptionsFilter());
+  const app = await NestFactory.create(AppModule);
+
+  // 🔥 مهم — فعال کردن body parser صریح
+  app.use(express.json({ limit: '5mb' }));
+  app.use(express.urlencoded({ extended: true }));
+
   app.setGlobalPrefix('api');
+
   const port = process.env.PORT ?? 3000;
+
   const uploadsDir = join(process.cwd(), 'uploads', 'avatars');
-  if (!existsSync(uploadsDir)) {
-    mkdirSync(uploadsDir, { recursive: true });
-  }
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/api/uploads/' });
-  await app.listen(port);
+  if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+
+  const httpAdapter = app.getHttpAdapter().getInstance();
+  httpAdapter.use('/api/uploads', express.static(join(process.cwd(), 'uploads')));
+
+  await app.listen(port, '0.0.0.0');
   console.log(`Sakhtar CRM API listening on http://localhost:${port}`);
 }
 

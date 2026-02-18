@@ -6,7 +6,6 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, User, Phone, Mail, Building2, ArrowRight } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 import { digitsToFa } from '@/lib/numbers';
-import { getUserDisplayName } from '@/lib/user-display';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,7 +19,6 @@ type Contact = {
   email?: string | null;
   companyId?: string | null;
   company?: { id: string; name: string } | null;
-  owner?: { id: string; phone: string | null; firstName: string | null; lastName: string | null } | null;
 };
 
 function contactFullName(c: { firstName: string; lastName: string }): string {
@@ -154,13 +152,6 @@ export default function ContactDetail() {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-3">
-                <User className="size-5 text-muted-foreground shrink-0" aria-hidden />
-                <div>
-                  <dt className="text-xs text-muted-foreground">مسئول</dt>
-                  <dd>{getUserDisplayName(contact.owner)}</dd>
-                </div>
-              </div>
             </dl>
           </div>
 

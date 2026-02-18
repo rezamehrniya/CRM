@@ -1,6 +1,5 @@
 # Backend development — run with volume mount to see code changes (nest --watch)
-# نیاز: schema.prisma باید binaryTargets شامل debian-openssl-3.0.x باشد (Bookworm فقط OpenSSL 3 دارد)
-FROM node:20-bookworm-slim
+FROM node:20-alpine
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install

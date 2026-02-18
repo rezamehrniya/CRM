@@ -14,7 +14,6 @@ const leadSelect = {
   notes: true,
   followUpAt: true,
   ownerUserId: true,
-  owner: { select: { id: true, phone: true, firstName: true, lastName: true } },
   createdAt: true,
   updatedAt: true,
 };

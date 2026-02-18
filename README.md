@@ -103,20 +103,27 @@ npx prisma db seed
 
 ## راه‌اندازی با Docker
 
-همه‌چیز (PostgreSQL + Backend + Frontend) در کانتینر. بعد از پاک شدن کانتینر/ولوم‌ها همین دستورات کافی است:
+همه‌چیز (PostgreSQL + Backend + Frontend) در کانتینر:
 
 ```bash
 # از روت پروژه
+cp .env.docker.example .env
 docker compose build
 docker compose up -d
 ```
 
 - **اپ:** http://localhost:8080 (مثلاً http://localhost:8080/t/demo/app)
-- **API:** http://localhost:3001/api (پورت روی host = 3001)
+- **API:** http://localhost:3000/api
 
-Backend به‌صورت خودکار هنگام استارت اجرا می‌کند: `prisma migrate deploy` و `prisma db seed`. یعنی با اولین بالا آمدن، دیتابیس migrate و tenant دمو به‌همراه کاربران و داده‌های ماک ساخته می‌شود و نیازی به اجرای دستی seed نیست.
+قبل از اولین بار، یک بار migrationها را با اتصال به همین دیتابیس اجرا کنید (مثلاً بعد از `docker compose up`، از روی ماشین خودتان):
 
-(اختیاری) برای override کردن `JWT_SECRET` در داکر، در روت پروژه فایل `.env` بسازید و مقدار `JWT_SECRET=...` بگذارید.
+```bash
+cd backend
+# در .env مقدار DATABASE_URL را بگذارید: postgresql://sakhtar:sakhtar_secret@localhost:5432/sakhtar_crm
+npx prisma migrate dev
+```
+
+بعد از آن، با هر بار `docker compose up` backend خودش `prisma migrate deploy` را اجرا می‌کند.
 
 اسکریپت‌های روت برای داکر: `npm run docker:build`, `npm run docker:up`, `npm run docker:down`, `npm run docker:logs`.
 
@@ -140,12 +147,9 @@ $env:DOCKER_BUILDKIT=0; docker compose build
 اگر با داکر کار می‌کنی و می‌خواهی **هر تغییری که در کد می‌دهی بلافاصله دیده شود** (بدون ری‌بیلد)، از compose مخصوص توسعه استفاده کن:
 
 ```bash
-# از روت پروژه — اولین بار یا بعد از تغییر schema.prisma حتماً با --no-cache بکند را بیلد کن
-docker compose -f docker-compose.yml -f docker-compose.dev.yml build backend --no-cache
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# از روت پروژه — اولین بار بیلد می‌کند، بعد فقط up
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
-
-اگر بکند با خطای Prisma (`libssl.so.1.1` یا `libquery_engine-...`) کرش کرد، همان دو خط بالا را بزن تا باینری درست (OpenSSL 3) داخل ایمیج برود.
 
 - **Backend:** پوشه‌های `backend/src` و `backend/prisma` روی کانتینر mount شده‌اند؛ Nest با `--watch` هر تغییر را می‌گیرد.
 - **Frontend:** کل پوشه‌ی `frontend` mount است؛ Vite با HMR هر تغییر را در مرورگر نشان می‌دهد.
@@ -155,7 +159,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 - **اپ:** http://localhost:5173 (مثلاً http://localhost:5173/t/demo/app)
 - **API:** http://localhost:3001
 
-برای متوقف کردن: `docker compose -f docker-compose.yml -f docker-compose.dev.yml down`.
+برای متوقف کردن: `Ctrl+C` یا در ترمینال دیگر `docker compose -f docker-compose.yml -f docker-compose.dev.yml down`.
 
 ---
 

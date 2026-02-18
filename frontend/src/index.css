@@ -42,10 +42,10 @@
 
 @media (min-width: 1024px) {
   .app-shell-main.collapsed {
-    margin-inline-start: 80px;
+    margin-inline-start: 112px;
   }
   .app-shell-main:not(.collapsed) {
-    margin-inline-start: 280px;
+    margin-inline-start: 312px;
   }
 }
 
