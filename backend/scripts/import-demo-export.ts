@@ -1,169 +1,173 @@
-/* scripts/import-demo-export.ts */
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const DEFAULT_FILE = "prisma/my-hardcode.json";
 
+type ExportRow = Record<string, any>;
 type ExportShape = {
   exportedAt: string;
   options: { tenantSlug: string | null; includeSessions: boolean };
-  tables: Record<string, any[]>;
+  tables: Record<string, ExportRow[] | undefined>;
 };
 
-function mustEnv(name: string) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env: ${name}`);
-  return v;
+function ensureGuard() {
+  if (process.env.ALLOW_PROD_IMPORT !== "true") {
+    throw new Error(
+      "Refusing to run. Set ALLOW_PROD_IMPORT=true to proceed (production guard).",
+    );
+  }
+}
+
+function resolveImportFile(): string {
+  const raw = process.argv[2]?.trim();
+  const target = raw && raw.length > 0 ? raw : DEFAULT_FILE;
+  return path.resolve(target);
+}
+
+function readExportFile(filePath: string): ExportShape {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Import file not found: ${filePath}`);
+  }
+
+  const raw = fs.readFileSync(filePath, "utf-8");
+  return JSON.parse(raw) as ExportShape;
+}
+
+function rows(data: ExportShape, key: string): ExportRow[] {
+  const value = data.tables?.[key];
+  return Array.isArray(value) ? value : [];
+}
+
+async function createRows(
+  label: string,
+  items: ExportRow[],
+  creator: (row: ExportRow) => Promise<unknown>,
+) {
+  if (items.length === 0) {
+    return;
+  }
+
+  console.log(`Creating ${label} (${items.length})...`);
+  for (const item of items) {
+    await creator(item);
+  }
+}
+
+async function purgeExistingTenant(tenantId: string) {
+  await prisma.$transaction(async (tx) => {
+    await tx.auditLog.deleteMany({ where: { tenantId } });
+    await tx.activity.deleteMany({ where: { tenantId } });
+    await tx.task.deleteMany({ where: { tenantId } });
+    await tx.deal.deleteMany({ where: { tenantId } });
+    await tx.lead.deleteMany({ where: { tenantId } });
+    await tx.contact.deleteMany({ where: { tenantId } });
+    await tx.company.deleteMany({ where: { tenantId } });
+    await tx.pipelineStage.deleteMany({ where: { tenantId } });
+    await tx.pipeline.deleteMany({ where: { tenantId } });
+    await tx.invoiceItem.deleteMany({ where: { invoice: { tenantId } } });
+    await tx.invoice.deleteMany({ where: { tenantId } });
+    await tx.subscription.deleteMany({ where: { tenantId } });
+    await tx.session.deleteMany({ where: { tenantId } });
+    await tx.membership.deleteMany({ where: { tenantId } });
+    await tx.tenant.delete({ where: { id: tenantId } });
+  });
 }
 
 async function main() {
-  // گارد ضد اشتباه روی پرود
-  if (process.env.ALLOW_PROD_IMPORT !== "true") {
-    throw new Error(
-      "Refusing to run. Set ALLOW_PROD_IMPORT=true to proceed (production guard)."
-    );
+  ensureGuard();
+
+  const importFile = resolveImportFile();
+  const data = readExportFile(importFile);
+  const tenantRows = rows(data, "tenant");
+  const tenantRow = tenantRows[0];
+
+  if (!tenantRow?.slug) {
+    throw new Error("No tenant row found in export.");
   }
 
-  const file = process.argv[2];
-  if (!file) throw new Error("Usage: ts-node scripts/import-demo-export.ts /path/to/demo-export.json");
+  const tenantSlug = String(tenantRow.slug);
+  console.log(`Import file: ${importFile}`);
+  console.log(`Importing tenant slug: ${tenantSlug}`);
 
-  const raw = fs.readFileSync(path.resolve(file), "utf-8");
-  const data = JSON.parse(raw) as ExportShape;
-
-  const t = data.tables;
-
-  const tenantRow = (t.tenant?.[0] ?? null) as any;
-  if (!tenantRow?.slug) throw new Error("No tenant row found in export.");
-
-  const demoSlug = tenantRow.slug as string;
-
-  console.log("Importing tenant slug:", demoSlug);
-
-  // 1) اگر demo وجود دارد، پاکسازی کامل tenant demo
-  const existing = await prisma.tenant.findUnique({ where: { slug: demoSlug } });
-
+  const existing = await prisma.tenant.findUnique({ where: { slug: tenantSlug } });
   if (existing) {
-    console.log("Existing demo tenant found. Purging dependent data... tenantId=", existing.id);
-
-    // ترتیب حذف مهم است (FK)
-    // اگر اسم مدل‌ها در Prisma شما متفاوت است، همین ترتیب را با اسم درست مدل‌ها جایگزین کن.
-    await prisma.$transaction(async (tx) => {
-      // child tables -> parent
-      if ((tx as any).auditLog) await (tx as any).auditLog.deleteMany({ where: { tenantId: existing.id } });
-      if ((tx as any).activity) await (tx as any).activity.deleteMany({ where: { tenantId: existing.id } });
-      if ((tx as any).task) await (tx as any).task.deleteMany({ where: { tenantId: existing.id } });
-      if ((tx as any).deal) await (tx as any).deal.deleteMany({ where: { tenantId: existing.id } });
-      if ((tx as any).lead) await (tx as any).lead.deleteMany({ where: { tenantId: existing.id } });
-      if ((tx as any).contact) await (tx as any).contact.deleteMany({ where: { tenantId: existing.id } });
-      if ((tx as any).company) await (tx as any).company.deleteMany({ where: { tenantId: existing.id } });
-
-      if ((tx as any).pipelineStage) await (tx as any).pipelineStage.deleteMany({ where: { tenantId: existing.id } });
-      if ((tx as any).pipeline) await (tx as any).pipeline.deleteMany({ where: { tenantId: existing.id } });
-
-      if ((tx as any).invoiceItem) await (tx as any).invoiceItem.deleteMany({ where: { invoice: { tenantId: existing.id } } });
-if ((tx as any).invoiceItem)
-  await (tx as any).invoiceItem.deleteMany({
-    where: { invoice: { tenantId: existing.id } },
-  });
-
-      if ((tx as any).subscription) await (tx as any).subscription.deleteMany({ where: { tenantId: existing.id } });
-      if ((tx as any).session) await (tx as any).session.deleteMany({ where: { tenantId: existing.id } });
-
-      if ((tx as any).membership) await (tx as any).membership.deleteMany({ where: { tenantId: existing.id } });
-
-      // نکته: userها ممکن است tenant دیگری هم داشته باشند (اگر multi-tenant user دارید).
-      // اینجا فقط userهایی را حذف می‌کنیم که فقط عضو همین tenant هستند.
-      // اگر ساختار شما ساده است، می‌توانی کل userهای export را delete کنی.
-    });
-
-    // در نهایت tenant را پاک کن تا بتوانیم با ID اصلی export دوباره بسازیم
-    await prisma.tenant.delete({ where: { id: existing.id } });
-    console.log("Old demo tenant deleted.");
+    console.log(`Existing tenant found. Purging tenantId=${existing.id} ...`);
+    await purgeExistingTenant(existing.id);
+    console.log("Old tenant removed.");
   }
 
-  // 2) ساخت tenant دقیقاً با همان ID export
   console.log("Creating tenant...");
-  await prisma.tenant.create({ data: tenantRow });
+  await prisma.tenant.create({ data: tenantRow as any });
 
-  // 3) Import user
-  console.log("Creating users...");
-  for (const u of t.user ?? []) {
-    await prisma.user.create({ data: u });
+  const users = rows(data, "user");
+  if (users.length > 0) {
+    console.log(`Upserting users (${users.length})...`);
+    for (const user of users) {
+      const id = user.id;
+      if (!id) {
+        throw new Error("User row is missing id.");
+      }
+
+      const { id: _id, ...rest } = user;
+      await prisma.user.upsert({
+        where: { id: String(id) },
+        create: user as any,
+        update: rest as any,
+      });
+    }
   }
 
-  // 4) membership
-  console.log("Creating memberships...");
-  for (const m of t.membership ?? []) {
-    await prisma.membership.create({ data: m });
-  }
+  await createRows("memberships", rows(data, "membership"), (row) =>
+    prisma.membership.create({ data: row as any }),
+  );
+  await createRows("sessions", rows(data, "session"), (row) =>
+    prisma.session.create({ data: row as any }),
+  );
+  await createRows("subscriptions", rows(data, "subscription"), (row) =>
+    prisma.subscription.create({ data: row as any }),
+  );
+  await createRows("invoices", rows(data, "invoice"), (row) =>
+    prisma.invoice.create({ data: row as any }),
+  );
+  await createRows("invoice items", rows(data, "invoiceItem"), (row) =>
+    prisma.invoiceItem.create({ data: row as any }),
+  );
+  await createRows("pipelines", rows(data, "pipeline"), (row) =>
+    prisma.pipeline.create({ data: row as any }),
+  );
+  await createRows("pipeline stages", rows(data, "pipelineStage"), (row) =>
+    prisma.pipelineStage.create({ data: row as any }),
+  );
+  await createRows("companies", rows(data, "company"), (row) =>
+    prisma.company.create({ data: row as any }),
+  );
+  await createRows("contacts", rows(data, "contact"), (row) =>
+    prisma.contact.create({ data: row as any }),
+  );
+  await createRows("leads", rows(data, "lead"), (row) =>
+    prisma.lead.create({ data: row as any }),
+  );
+  await createRows("deals", rows(data, "deal"), (row) =>
+    prisma.deal.create({ data: row as any }),
+  );
+  await createRows("tasks", rows(data, "task"), (row) =>
+    prisma.task.create({ data: row as any }),
+  );
+  await createRows("activities", rows(data, "activity"), (row) =>
+    prisma.activity.create({ data: row as any }),
+  );
+  await createRows("audit logs", rows(data, "auditLog"), (row) =>
+    prisma.auditLog.create({ data: row as any }),
+  );
 
-  // 5) sessions (در export شما خالیه ولی گذاشتم)
-  console.log("Creating sessions...");
-  for (const s of t.session ?? []) {
-    await (prisma as any).session.create({ data: s });
-  }
-
-  // 6) subscription
-  console.log("Creating subscriptions...");
-  for (const s of t.subscription ?? []) {
-    await (prisma as any).subscription.create({ data: s });
-  }
-
-  // 7) pipeline & stages
-  console.log("Creating pipelines...");
-  for (const p of t.pipeline ?? []) {
-    await (prisma as any).pipeline.create({ data: p });
-  }
-
-  console.log("Creating pipeline stages...");
-  for (const ps of t.pipelineStage ?? []) {
-    await (prisma as any).pipelineStage.create({ data: ps });
-  }
-
-  // 8) company
-  console.log("Creating companies...");
-  for (const c of t.company ?? []) {
-    await (prisma as any).company.create({ data: c });
-  }
-
-  // 9) contact
-  console.log("Creating contacts...");
-  for (const c of t.contact ?? []) {
-    await (prisma as any).contact.create({ data: c });
-  }
-
-  // 10) lead
-  console.log("Creating leads...");
-  for (const l of t.lead ?? []) {
-    await (prisma as any).lead.create({ data: l });
-  }
-
-  // 11) deal
-  console.log("Creating deals...");
-  for (const d of t.deal ?? []) {
-    await (prisma as any).deal.create({ data: d });
-  }
-
-  // 12) task
-  console.log("Creating tasks...");
-  for (const task of t.task ?? []) {
-    await (prisma as any).task.create({ data: task });
-  }
-
-  // 13) activity
-  console.log("Creating activities...");
-  for (const a of t.activity ?? []) {
-    await (prisma as any).activity.create({ data: a });
-  }
-
-  // auditLog خالی
-  console.log("Done ✅");
+  console.log("Done.");
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch((error) => {
+    console.error(error);
     process.exit(1);
   })
   .finally(async () => {

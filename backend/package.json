@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "seed": "ts-node prisma/seed.ts",
+    "export:hardcode": "ts-node scripts/export-hardcode.ts",
+    "import:demo": "ts-node scripts/import-demo-export.ts prisma/my-hardcode.json",
     "build": "nest build",
     "start": "nest start",
     "dev": "nest start --watch",

@@ -23,3 +23,19 @@ npm run start:dev
 - **Tenant:** middleware از مسیر `t/:tenantSlug`؛ `req.tenant`
 - **Auth:** JWT (Bearer) + refresh در HttpOnly cookie با Path tenant-scoped؛ Guardها در [AUTH-ARCHITECTURE](../docs/AUTH-ARCHITECTURE.md)
 - **مدل‌ها:** Prisma در `prisma/schema.prisma`؛ همه جداول عملیاتی با `tenantId`
+
+## Import Demo Data
+
+Use the bundled export file `prisma/my-hardcode.json` to reset and import the `demo` tenant data.
+
+```bash
+cd backend
+ALLOW_PROD_IMPORT=true npm run import:demo
+```
+
+You can also pass a custom file:
+
+```bash
+cd backend
+ALLOW_PROD_IMPORT=true ts-node scripts/import-demo-export.ts /absolute/path/to/file.json
+```
