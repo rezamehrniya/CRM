@@ -1,0 +1,3 @@
+﻿release_tag=crm-demo-20260223-01
+commit=fdbe29a7ba64245ef36ffbabd84c3cdf572a6914
+date=2026-02-23
