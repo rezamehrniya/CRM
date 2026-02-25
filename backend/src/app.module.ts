@@ -12,6 +12,13 @@ import { DealsModule } from './deals/deals.module';
 import { LeadsModule } from './leads/leads.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ActivitiesModule } from './activities/activities.module';
+import { ProductsModule } from './products/products.module';
+import { MetaModule } from './meta/meta.module';
+import { TodosModule } from './todos/todos.module';
+import { RemindersModule } from './reminders/reminders.module';
+import { CallsModule } from './calls/calls.module';
+import { SmsModule } from './sms/sms.module';
+import { TimelineModule } from './timeline/timeline.module';
 
 @Module({
   imports: [
@@ -28,6 +35,13 @@ import { ActivitiesModule } from './activities/activities.module';
     LeadsModule,
     TasksModule,
     ActivitiesModule,
+    ProductsModule,
+    MetaModule,
+    TodosModule,
+    RemindersModule,
+    CallsModule,
+    SmsModule,
+    TimelineModule,
   ],
 })
 export class AppModule {}

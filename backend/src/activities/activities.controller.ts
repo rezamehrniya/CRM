@@ -3,13 +3,16 @@ import { Request } from 'express';
 import { ActivitiesService } from './activities.service';
 import { SubscriptionActiveGuard } from '../billing/subscription.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { RequirePermissions } from '../auth/permissions.decorator';
 
 @Controller('t/:tenantSlug/activities')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ActivitiesController {
   constructor(private readonly activities: ActivitiesService) {}
 
   @Get()
+  @RequirePermissions('activities.read')
   async list(
     @Req() req: Request,
     @Query('contactId') contactId?: string,
@@ -28,6 +31,7 @@ export class ActivitiesController {
   }
 
   @Get(':id')
+  @RequirePermissions('activities.read')
   async getOne(@Req() req: Request, @Param('id') id: string) {
     const tenant = (req as any).tenant;
     if (!tenant) return null;
@@ -36,6 +40,7 @@ export class ActivitiesController {
 
   @Post()
   @UseGuards(SubscriptionActiveGuard)
+  @RequirePermissions('activities.write')
   async create(@Req() req: Request, @Body() body: any) {
     const tenant = (req as any).tenant;
     if (!tenant) throw new Error('Tenant not found');

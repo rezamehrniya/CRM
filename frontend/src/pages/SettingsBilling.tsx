@@ -37,7 +37,8 @@ type Invoice = {
 
 export default function SettingsBilling() {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
-  const { role, loading: authLoading } = useAuth();
+  const { hasPermission, loading: authLoading } = useAuth();
+  const canAccessBilling = hasPermission('settings.read') && hasPermission('invoices.read');
   const base = `/t/${tenantSlug}/app`;
   const [sub, setSub] = useState<Subscription | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
@@ -46,7 +47,7 @@ export default function SettingsBilling() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (role !== 'OWNER') return;
+    if (!canAccessBilling) return;
     Promise.all([
       apiGet<Subscription>('/billing/subscription'),
       apiGet<Usage>('/billing/usage'),
@@ -59,13 +60,13 @@ export default function SettingsBilling() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [role]);
+  }, [canAccessBilling]);
 
   if (authLoading) {
     return <div className="text-muted-foreground">در حال بارگذاری...</div>;
   }
 
-  if (role !== 'OWNER') {
+  if (!canAccessBilling) {
     return (
       <ErrorPage
         variant="403"

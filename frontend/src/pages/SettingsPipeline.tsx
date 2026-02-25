@@ -26,25 +26,26 @@ type Pipeline = {
 
 export default function SettingsPipeline() {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
-  const { role, loading: authLoading } = useAuth();
+  const { hasPermission, loading: authLoading } = useAuth();
+  const canAccessSettings = hasPermission('settings.read');
   const base = `/t/${tenantSlug}/app`;
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (role !== 'OWNER') return;
+    if (!canAccessSettings) return;
     apiGet<Pipeline[]>('/pipelines')
       .then((data) => setPipelines(Array.isArray(data) ? data : []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [role]);
+  }, [canAccessSettings]);
 
   if (authLoading) {
     return <div className="text-muted-foreground">در حال بارگذاری...</div>;
   }
 
-  if (role !== 'OWNER') {
+  if (!canAccessSettings) {
     return (
       <ErrorPage
         variant="403"

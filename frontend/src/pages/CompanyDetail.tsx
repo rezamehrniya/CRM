@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Building2, Phone, Globe, Users, HandCoins, LayoutGrid, ArrowRight } from 'lucide-react';
 import { apiGet } from '@/lib/api';
-import { formatFaNum, digitsToFa } from '@/lib/numbers';
+import { formatFaCurrency, formatFaNum, digitsToFa } from '@/lib/numbers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorPage } from '@/components/error-page';
 
@@ -209,7 +209,7 @@ export default function CompanyDetail() {
                 <HandCoins className="size-5 text-primary" aria-hidden />
                 معاملات
               </h2>
-              <Link to={`${base}/deals`} className="text-sm text-primary hover:underline">
+              <Link to={`${base}/quotes`} className="text-sm text-primary hover:underline">
                 همه معاملات
               </Link>
             </div>
@@ -219,11 +219,11 @@ export default function CompanyDetail() {
               <ul className="space-y-2">
                 {deals.map((d) => (
                   <li key={d.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <Link to={`${base}/deals/${d.id}`} className="font-medium text-primary hover:underline">
+                    <Link to={`${base}/quotes/${d.id}`} className="font-medium text-primary hover:underline">
                       {d.title}
                     </Link>
                     <span className="text-sm text-muted-foreground">
-                      {d.stage?.name ?? '—'} · <span className="fa-num">{formatFaNum(d.amount as string | number | null | undefined)}</span>
+                      {d.stage?.name ?? '—'} · <span className="fa-num">{formatFaCurrency(d.amount as string | number | null | undefined)}</span>
                     </span>
                   </li>
                 ))}
@@ -243,3 +243,4 @@ export default function CompanyDetail() {
     </div>
   );
 }
+

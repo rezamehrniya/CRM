@@ -5,7 +5,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { formatFaNum } from '@/lib/numbers';
+import { formatFaCurrency, formatFaNum } from '@/lib/numbers';
 
 type DashboardCardProps = {
   title: string;
@@ -34,7 +34,7 @@ export function DashboardCard({
   const displayValue = isEmpty
     ? emptyMessage
     : suffixToman
-      ? `${formatFaNum(value)} تومان`
+      ? formatFaCurrency(value)
       : isNum
         ? formatFaNum(value)
         : String(value);

@@ -9,14 +9,15 @@ import { ErrorPage } from '@/components/error-page';
 
 export default function SettingsLeadSources() {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
-  const { role, loading: authLoading } = useAuth();
+  const { hasPermission, loading: authLoading } = useAuth();
+  const canAccessSettings = hasPermission('settings.read');
   const base = `/t/${tenantSlug}/app`;
 
   if (authLoading) {
     return <div className="text-muted-foreground">در حال بارگذاری...</div>;
   }
 
-  if (role !== 'OWNER') {
+  if (!canAccessSettings) {
     return (
       <ErrorPage
         variant="403"

@@ -1,21 +1,26 @@
-import { Controller, Get, Post, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { RequirePermissions } from '../auth/permissions.decorator';
 import { SettingsService } from './settings.service';
 
-/**
- * تنظیمات Tenant — فقط OWNER.
- * مدیریت اعضا فقط با شماره تلفن؛ شماره تلفن به‌عنوان نام کاربری (برای ورود) استفاده می‌شود.
- */
 @Controller('t/:tenantSlug/settings')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('OWNER')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class SettingsController {
   constructor(private readonly settings: SettingsService) {}
 
   @Get()
+  @RequirePermissions('settings.read')
   getSettings(@Req() req: Request) {
     const tenant = (req as any).tenant;
     if (!tenant) return { error: 'Tenant not found' };
@@ -23,6 +28,7 @@ export class SettingsController {
   }
 
   @Get('members')
+  @RequirePermissions('users.read')
   listMembers(@Req() req: Request) {
     const tenant = (req as any).tenant;
     if (!tenant) return [];
@@ -30,16 +36,56 @@ export class SettingsController {
   }
 
   @Post('members')
+  @RequirePermissions('users.write')
   addMember(
     @Req() req: Request,
-    @Body() body: { phone?: string; password?: string; role?: string },
+    @Body()
+    body: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+      roleKey?: string;
+    },
   ) {
     const tenant = (req as any).tenant;
     if (!tenant) throw new Error('Tenant not found');
     return this.settings.addMember(tenant, {
-      phone: body.phone ?? '',
-      password: body.password ?? '',
-      role: body.role,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      email: body.email,
+      phone: body.phone,
+      password: body.password,
+      roleKey: body.roleKey,
     });
+  }
+
+  @Patch('members/:membershipId/role')
+  @RequirePermissions('users.manage')
+  updateMemberRole(
+    @Req() req: Request,
+    @Param('membershipId') membershipId: string,
+    @Body() body: { roleKey?: string },
+  ) {
+    const tenant = (req as any).tenant;
+    if (!tenant) throw new Error('Tenant not found');
+    return this.settings.updateMemberRole(tenant, membershipId, body.roleKey);
+  }
+
+  @Get('roles')
+  @RequirePermissions('users.read')
+  listRoles(@Req() req: Request) {
+    const tenant = (req as any).tenant;
+    if (!tenant) return [];
+    return this.settings.listRoles(tenant);
+  }
+
+  @Get('permissions')
+  @RequirePermissions('users.read')
+  listPermissions(@Req() req: Request) {
+    const tenant = (req as any).tenant;
+    if (!tenant) return [];
+    return this.settings.listPermissions(tenant);
   }
 }

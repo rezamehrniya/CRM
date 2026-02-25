@@ -1,10 +1,32 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  RINGING
+  IN_PROGRESS
+  ANSWERED
+  MISSED
+  FAILED
+  ENDED
+}
+
+enum SmsStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
 }
 
 model Tenant {
@@ -15,15 +37,22 @@ model Tenant {
   createdAt DateTime @default(now())
 
   memberships   Membership[]
+  roles         Role[]
   sessions      Session[]
   subscriptions Subscription[]
   contacts      Contact[]
   companies     Company[]
   pipelines     Pipeline[]
   deals         Deal[]
+  dealItems     DealItem[]
   leads         Lead[]
+  todos         Todo[]
+  smsTemplates  SmsTemplate[]
+  smsOptOuts    SmsOptOut[]
+  smsLogs       SmsLog[]
   activities    Activity[]
   tasks         Task[]
+  callLogs      CallLog[]
   auditLogs     AuditLog[]
   invoices      Invoice[]
 }
@@ -39,9 +68,18 @@ model User {
   passwordHash String?
   createdAt    DateTime @default(now())
   status       String   // ACTIVE, DISABLED
+  ext          String?
 
-  memberships Membership[]
-  sessions    Session[]
+  memberships       Membership[]
+  sessions          Session[]
+  todos             Todo[]
+  tasksAssigned     Task[]    @relation("TaskAssignee")
+  tasksCreated      Task[]    @relation("TaskCreator")
+  callLogsAsAgent   CallLog[] @relation("CallLogAgent")
+  callLogsAnswered  CallLog[] @relation("CallLogAnsweredBy")
+  smsTemplatesCreated SmsTemplate[] @relation("SmsTemplateCreatedBy")
+  smsOptOutsCreated SmsOptOut[] @relation("SmsOptOutCreatedBy")
+  smsLogsCreated    SmsLog[] @relation("SmsLogCreatedBy")
 }
 
 model Session {
@@ -62,13 +100,53 @@ model Membership {
   id        String   @id @default(cuid())
   tenantId  String
   userId    String
-  role      String   // OWNER, MEMBER
+  role      String   // ADMIN, SALES_MANAGER, SALES_REP, VIEWER
+  roleId    String?
   status    String   // INVITED, ACTIVE, DISABLED
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleRef Role? @relation(fields: [roleId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, userId])
+  @@index([tenantId, roleId])
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  tenantId    String
+  key         String
+  name        String
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  memberships Membership[]
+  permissions RolePermission[]
+
+  @@unique([tenantId, key])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
 }
 
 model Contact {
@@ -98,6 +176,7 @@ model Company {
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   contacts Contact[]
   deals    Deal[]
+  tasks    Task[]
 }
 
 model Pipeline {
@@ -126,6 +205,9 @@ model Deal {
   id                String    @id @default(cuid())
   tenantId          String
   title             String
+  subtotal          Decimal?  @db.Decimal(18, 0)
+  discountAmount    Decimal?  @db.Decimal(18, 0)
+  taxAmount         Decimal?  @db.Decimal(18, 0)
   amount            Decimal?  @db.Decimal(18, 0)
   stageId           String
   pipelineId        String
@@ -133,14 +215,41 @@ model Deal {
   companyId         String?
   ownerUserId       String?
   expectedCloseDate DateTime?
+  sentAt            DateTime?
 
   tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   stage    PipelineStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
   pipeline Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   contact  Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
   company  Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  items    DealItem[]
   activities Activity[]
   tasks    Task[]
+}
+
+model DealItem {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  dealId             String
+  productCode        String?
+  productName        String
+  unit               String?
+  quantity           Decimal  @db.Decimal(18, 3)
+  unitPrice          Decimal  @db.Decimal(18, 0)
+  discountPct        Decimal  @default(0) @db.Decimal(5, 2)
+  taxPct             Decimal  @default(0) @db.Decimal(5, 2)
+  lineSubtotal       Decimal  @db.Decimal(18, 0)
+  lineDiscountAmount Decimal  @db.Decimal(18, 0)
+  lineTaxAmount      Decimal  @db.Decimal(18, 0)
+  lineTotal          Decimal  @db.Decimal(18, 0)
+  position           Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, dealId, position])
 }
 
 model Activity {
@@ -181,15 +290,138 @@ model Task {
   id               String    @id @default(cuid())
   tenantId         String
   title            String
+  description      String?
   dueAt            DateTime?
-  status           String    // OPEN, DONE
+  status           String    @default("today") // backlog, today, in_progress, waiting, done
+  priority         String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  position         Int       @default(0)
   assignedToUserId String?
+  createdByUserId  String?
   contactId        String?
+  companyId        String?
   dealId           String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignee  User?    @relation("TaskAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  createdBy User?    @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status, position])
+  @@index([tenantId, assignedToUserId, status, position])
+}
+
+model Todo {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  title     String
+  dueAt     DateTime?
+  status    String   @default("OPEN") // OPEN, DONE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId, status, updatedAt])
+}
+
+model SmsTemplate {
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String
+  body            String
+  isActive        Boolean  @default(true)
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation("SmsTemplateCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  logs      SmsLog[]
+
+  @@index([tenantId, isActive, updatedAt])
+  @@unique([tenantId, name])
+}
+
+model SmsOptOut {
+  id              String   @id @default(cuid())
+  tenantId        String
+  phone           String
+  reason          String?
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy User?  @relation("SmsOptOutCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, phone])
+  @@index([tenantId, createdAt])
+}
+
+model SmsLog {
+  id                String    @id @default(cuid())
+  tenantId          String
+  createdByUserId   String
+  senderLine        String    @default("Sakhtar")
+  recipientPhone    String
+  recipientName     String?
+  body              String
+  status            SmsStatus @default(QUEUED)
+  source            String    @default("SINGLE") // SINGLE, BULK, SEED
+  campaignKey       String?
+  providerMessageId String
+  errorMessage      String?
+  templateId        String?
+  queuedAt          DateTime  @default(now())
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy  User        @relation("SmsLogCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  template   SmsTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, queuedAt])
+  @@index([tenantId, createdByUserId, queuedAt])
+  @@index([tenantId, status, queuedAt])
+  @@index([tenantId, campaignKey])
+  @@unique([tenantId, providerMessageId])
+}
+
+model CallLog {
+  id               String        @id @default(cuid())
+  tenantId         String
+  direction        CallDirection
+  fromNumber       String
+  toNumber         String
+  agentUserId      String
+  answeredByUserId String?
+  status           CallStatus
+  startedAt        DateTime
+  answeredAt       DateTime?
+  endedAt          DateTime?
+  durationSec      Int?
+  ext              String
+  recordingUrl     String?
+  providerCallId   String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agent      User   @relation("CallLogAgent", fields: [agentUserId], references: [id], onDelete: Cascade)
+  answeredBy User?  @relation("CallLogAnsweredBy", fields: [answeredByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, startedAt])
+  @@index([tenantId, agentUserId, startedAt])
+  @@index([tenantId, status, startedAt])
+  @@unique([tenantId, providerCallId])
 }
 
 model AuditLog {

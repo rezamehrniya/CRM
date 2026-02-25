@@ -22,7 +22,7 @@
 
 /* Layout */
 .app-shell-sidebar {
-  width: 280px;
+  width: 256px;
   transition: width 0.2s ease;
 }
 
@@ -32,7 +32,7 @@
 
 @media (max-width: 1023px) {
   .app-shell-sidebar.collapsed {
-    width: 280px;
+    width: 256px;
   }
 }
 
@@ -45,7 +45,7 @@
     margin-inline-start: 112px;
   }
   .app-shell-main:not(.collapsed) {
-    margin-inline-start: 312px;
+    margin-inline-start: 288px;
   }
 }
 

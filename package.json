@@ -15,6 +15,8 @@
     "backend:test": "cd backend && npm run test",
     "backend:prisma:generate": "cd backend && npx prisma generate",
     "backend:prisma:migrate": "cd backend && npx prisma migrate dev",
+    "backend:prisma:seed": "cd backend && npx prisma db seed",
+    "backend:local:setup": "bash ./scripts/local-backend-setup.sh",
     "frontend:install": "cd frontend && npm install",
     "frontend:dev": "cd frontend && npm run dev",
     "frontend:build": "cd frontend && npm run build",
@@ -26,8 +28,18 @@
     "docker:build:no-provenance": "DOCKER_BUILDKIT=0 docker compose build",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "docker:up:dev": "docker compose -f docker-compose.dev.yml up -d --build",
+    "docker:down:dev": "docker compose -f docker-compose.dev.yml down",
+    "docker:logs:dev": "docker compose -f docker-compose.dev.yml logs -f"
   },
-  "keywords": ["crm", "sakhtar"],
-  "license": "UNLICENSED"
+  "keywords": [
+    "crm",
+    "sakhtar"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "react-is": "^19.2.4",
+    "recharts": "^3.7.0"
+  }
 }

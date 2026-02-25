@@ -40,6 +40,14 @@ function rows(data: ExportShape, key: string): ExportRow[] {
   return Array.isArray(value) ? value : [];
 }
 
+function normalizeTaskStatus(raw: unknown): string {
+  const value = String(raw ?? '').trim().toLowerCase();
+  if (!value || value === 'open') return 'today';
+  if (value === 'done') return 'done';
+  if (['backlog', 'today', 'in_progress', 'waiting', 'done'].includes(value)) return value;
+  return 'backlog';
+}
+
 async function createRows(
   label: string,
   items: ExportRow[],
@@ -70,6 +78,8 @@ async function purgeExistingTenant(tenantId: string) {
     await tx.invoice.deleteMany({ where: { tenantId } });
     await tx.subscription.deleteMany({ where: { tenantId } });
     await tx.session.deleteMany({ where: { tenantId } });
+    await tx.rolePermission.deleteMany({ where: { role: { tenantId } } });
+    await tx.role.deleteMany({ where: { tenantId } });
     await tx.membership.deleteMany({ where: { tenantId } });
     await tx.tenant.delete({ where: { id: tenantId } });
   });
@@ -119,6 +129,40 @@ async function main() {
     }
   }
 
+  const permissionRows = rows(data, "permission");
+  const permissionIdMap = new Map<string, string>();
+  if (permissionRows.length > 0) {
+    console.log(`Upserting permissions (${permissionRows.length})...`);
+    for (const row of permissionRows) {
+      const key = String(row.key ?? "").trim();
+      if (!key) continue;
+      const permission = await prisma.permission.upsert({
+        where: { key },
+        update: { description: row.description ?? null } as any,
+        create: {
+          id: row.id,
+          key,
+          description: row.description ?? null,
+          createdAt: row.createdAt,
+        } as any,
+      });
+      if (row.id) permissionIdMap.set(String(row.id), permission.id);
+    }
+  }
+
+  await createRows("roles", rows(data, "role"), (row) =>
+    prisma.role.create({ data: row as any }),
+  );
+  await createRows("role permissions", rows(data, "rolePermission"), (row) =>
+    prisma.rolePermission.create({
+      data: {
+        roleId: row.roleId,
+        permissionId:
+          permissionIdMap.get(String(row.permissionId ?? "")) ??
+          row.permissionId,
+      } as any,
+    }),
+  );
   await createRows("memberships", rows(data, "membership"), (row) =>
     prisma.membership.create({ data: row as any }),
   );
@@ -152,9 +196,30 @@ async function main() {
   await createRows("deals", rows(data, "deal"), (row) =>
     prisma.deal.create({ data: row as any }),
   );
-  await createRows("tasks", rows(data, "task"), (row) =>
-    prisma.task.create({ data: row as any }),
+  await createRows("deal items", rows(data, "dealItem"), (row) =>
+    prisma.dealItem.create({ data: row as any }),
   );
+  const taskRows = rows(data, "task");
+  if (taskRows.length > 0) {
+    console.log(`Creating tasks (${taskRows.length})...`);
+    const positionByStatus = new Map<string, number>();
+    for (const row of taskRows) {
+      const status = normalizeTaskStatus(row.status);
+      const position =
+        typeof row.position === "number"
+          ? row.position
+          : (positionByStatus.get(status) ?? 0);
+      positionByStatus.set(status, position + 1);
+
+      await prisma.task.create({
+        data: {
+          ...row,
+          status,
+          position,
+        } as any,
+      });
+    }
+  }
   await createRows("activities", rows(data, "activity"), (row) =>
     prisma.activity.create({ data: row as any }),
   );

@@ -2,7 +2,7 @@
  * صفحهٔ یکپارچه برای حالت‌های خطا و Maintenance
  * استفاده: داخل Layout (با sidebar) یا تمام‌صفحه (مثلاً ۴۰۴ خارج از اپ)
  */
-import { useNavigate } from 'react-router-dom';
+import { Link, useInRouterContext } from 'react-router-dom';
 import { Wrench, FileQuestion, ShieldAlert, LogIn, ServerCrash, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
@@ -80,7 +80,7 @@ export function ErrorPage({
   const displayTitle = title ?? config.defaultTitle;
   const displayDescription = description ?? config.defaultDescription;
 
-  const navigate = useNavigate();
+  const inRouter = useInRouterContext();
   const defaultActionLabels: Partial<Record<ErrorPageVariant, string>> = {
     maintenance: 'برگشت به شروع',
     '404': 'برگشت به داشبورد',
@@ -108,11 +108,18 @@ export function ErrorPage({
         <h1 className="text-title-lg font-title text-foreground">{displayTitle}</h1>
         <p className="text-muted-foreground text-sm md:text-base">{displayDescription}</p>
         <div className="flex flex-wrap gap-2 justify-center mt-2">
-          {actionHref && label && (
-            <Button type="button" onClick={() => navigate(actionHref)}>
+          {actionHref && label && (inRouter ? (
+            <Link
+              to={actionHref}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              {label}
+            </Link>
+          ) : (
+            <Button type="button" onClick={() => window.location.assign(actionHref)}>
               {label}
             </Button>
-          )}
+          ))}
           {onRetry && (
             <Button variant="outline" onClick={onRetry} className="gap-2">
               <RefreshCw className="size-4" aria-hidden />

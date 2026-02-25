@@ -68,7 +68,16 @@ export default function TaskDetail() {
     );
   }
 
-  const statusLabel = task?.status === 'DONE' ? 'انجام‌شده' : 'باز';
+  const statusLabel =
+    task?.status === 'done' || task?.status === 'DONE'
+      ? 'انجام‌شده'
+      : task?.status === 'in_progress'
+      ? 'در حال انجام'
+      : task?.status === 'waiting'
+      ? 'منتظر پاسخ'
+      : task?.status === 'backlog'
+      ? 'بک‌لاگ'
+      : 'امروز';
 
   return (
     <div className="space-y-5">
@@ -143,7 +152,7 @@ export default function TaskDetail() {
                   <div>
                     <dt className="text-xs text-muted-foreground">معامله</dt>
                     <dd>
-                      <Link to={`${base}/deals/${task.deal.id}`} className="font-medium text-primary hover:underline">
+                      <Link to={`${base}/quotes/${task.deal.id}`} className="font-medium text-primary hover:underline">
                         {task.deal.title}
                       </Link>
                     </dd>
@@ -165,3 +174,4 @@ export default function TaskDetail() {
     </div>
   );
 }
+

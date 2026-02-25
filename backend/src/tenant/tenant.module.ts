@@ -6,6 +6,9 @@ export class TenantModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(TenantMiddleware)
-      .forRoutes({ path: 't*', method: RequestMethod.ALL });
+      .forRoutes(
+        { path: 't*', method: RequestMethod.ALL },
+        { path: 'api/t*', method: RequestMethod.ALL },
+      );
   }
 }

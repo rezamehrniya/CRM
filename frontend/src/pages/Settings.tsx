@@ -1,5 +1,5 @@
 /**
- * صفحهٔ تنظیمات — فقط برای OWNER (Admin).
+ * صفحهٔ تنظیمات — فقط برای Role (Admin).
  * دسترسی با ProtectedRoute و چک نقش در Layout محدود شده است.
  * مرجع: docs/specs/RBAC-PANELS.md, docs/specs/PRD-PANELS-USER-STORIES.md
  */
@@ -11,7 +11,7 @@ import { ErrorPage } from '@/components/error-page';
 
 export default function Settings() {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
-  const { role, loading } = useAuth();
+  const { loading, hasPermission } = useAuth();
   const base = `/t/${tenantSlug}/app`;
 
   if (loading) {
@@ -23,7 +23,7 @@ export default function Settings() {
     );
   }
 
-  if (role !== 'OWNER') {
+  if (!hasPermission('settings.read')) {
     return (
       <ErrorPage
         variant="403"
@@ -44,6 +44,7 @@ export default function Settings() {
       icon: Users,
       href: `${base}/settings/users`,
       comingSoon: false,
+      requiredPermissions: ['users.read'],
     },
     {
       id: 'pipeline',
@@ -52,6 +53,7 @@ export default function Settings() {
       icon: GitBranch,
       href: `${base}/settings/pipeline`,
       comingSoon: false,
+      requiredPermissions: ['settings.read'],
     },
     {
       id: 'lead-sources',
@@ -60,6 +62,7 @@ export default function Settings() {
       icon: Link2,
       href: `${base}/settings/lead-sources`,
       comingSoon: false,
+      requiredPermissions: ['settings.read'],
     },
     {
       id: 'billing',
@@ -68,8 +71,12 @@ export default function Settings() {
       icon: CreditCard,
       href: `${base}/settings/billing`,
       comingSoon: false,
+      requiredPermissions: ['settings.read', 'invoices.read'],
     },
   ];
+  const visibleSections = sections.filter((section) =>
+    section.requiredPermissions.every((permission) => hasPermission(permission))
+  );
 
   return (
     <div className="space-y-5">
@@ -80,7 +87,7 @@ export default function Settings() {
       </p>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {sections.map((section) => {
+        {visibleSections.map((section) => {
           const Icon = section.icon;
           return (
             <div
@@ -114,8 +121,9 @@ export default function Settings() {
 
       <div className="glass-card rounded-card p-4 flex items-center gap-3 text-sm text-muted-foreground">
         <ShieldAlert className="size-5 shrink-0" aria-hidden />
-        <span>این بخش فقط برای نقش مدیر (OWNER) در دسترس است.</span>
+        <span>این بخش فقط برای نقش مدیر (Role) در دسترس است.</span>
       </div>
     </div>
   );
 }
+

@@ -13,7 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { JalaliDate } from '@/components/ui/jalali-date';
 import { JalaliDateInput } from '@/components/ui/jalali-date-input';
+import { useAuth } from '@/contexts/auth-context';
 import { Pencil, Trash2 } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
 
 type Lead = {
   id: string;
@@ -51,7 +53,21 @@ const SOURCE_OPTIONS = [
   { value: 'سایر', label: 'سایر' },
 ];
 
+const STATUS_THEME: Record<string, { bg: string; bar: string }> = {
+  NEW: { bg: 'bg-sky-100', bar: 'bg-sky-600' },
+  CONTACTED: { bg: 'bg-amber-100', bar: 'bg-amber-600' },
+  QUALIFIED: { bg: 'bg-indigo-100', bar: 'bg-indigo-600' },
+  CONVERTED: { bg: 'bg-emerald-100', bar: 'bg-emerald-600' },
+  LOST: { bg: 'bg-rose-100', bar: 'bg-rose-600' },
+};
+
+function isClosedStatus(status: string) {
+  return status === 'CONVERTED' || status === 'LOST';
+}
+
 export default function Leads() {
+  const { hasPermission } = useAuth();
+  const canManageLeads = hasPermission('leads.manage');
   const [data, setData] = useState<{
     data: Lead[];
     total: number;
@@ -60,11 +76,15 @@ export default function Leads() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [activeTab, setActiveTab] = useState<'overview' | 'list'>(canManageLeads ? 'overview' : 'list');
   const [drawer, setDrawer] = useState<Lead | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewLeads, setOverviewLeads] = useState<Lead[]>([]);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -79,6 +99,12 @@ export default function Leads() {
   const [saving, setSaving] = useState(false);
 
   const pageSize = 25;
+
+  useEffect(() => {
+    if (!canManageLeads && activeTab === 'overview') {
+      setActiveTab('list');
+    }
+  }, [canManageLeads, activeTab]);
 
   useEffect(() => {
     setLoading(true);
@@ -100,6 +126,39 @@ export default function Leads() {
       setData({ ...res, page, pageSize })
     );
   };
+
+  const fetchOverview = useCallback(async () => {
+    if (!canManageLeads) return;
+    setOverviewLoading(true);
+    setOverviewError(null);
+    try {
+      const all: Lead[] = [];
+      const fetchPageSize = 200;
+      let cursorPage = 1;
+      let total = 0;
+      do {
+        const params = new URLSearchParams({
+          page: String(cursorPage),
+          pageSize: String(fetchPageSize),
+        });
+        const res = await apiGet<{ data: Lead[]; total: number }>(`/leads?${params}`);
+        total = res.total ?? 0;
+        all.push(...(res.data ?? []));
+        cursorPage += 1;
+      } while (all.length < total && cursorPage <= 20);
+      setOverviewLeads(all);
+    } catch (e) {
+      setOverviewError(e instanceof Error ? e.message : 'خطا در دریافت نمای کلی لیدها');
+    } finally {
+      setOverviewLoading(false);
+    }
+  }, [canManageLeads]);
+
+  useEffect(() => {
+    if (canManageLeads) {
+      void fetchOverview();
+    }
+  }, [canManageLeads, fetchOverview]);
 
   const handleCreate = () => {
     setDrawer(null);
@@ -157,6 +216,7 @@ export default function Leads() {
         setFormOpen(false);
       }
       refetch();
+      if (canManageLeads) void fetchOverview();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'خطا');
     } finally {
@@ -171,6 +231,7 @@ export default function Leads() {
       await apiDelete(`/leads/${id}`);
       closeForm();
       refetch();
+      if (canManageLeads) void fetchOverview();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'خطا');
     } finally {
@@ -180,34 +241,89 @@ export default function Leads() {
 
   const statusLabel = (s: string) => STATUS_OPTIONS.find((o) => o.value === s)?.label ?? s;
 
+  const overviewStats = useMemo(() => {
+    const leads = overviewLeads;
+    const total = leads.length;
+    const statusCounts = STATUS_OPTIONS.reduce<Record<string, number>>((acc, item) => {
+      acc[item.value] = 0;
+      return acc;
+    }, {});
+    const sourceCounts: Record<string, number> = {};
+    let overdueFollowUps = 0;
+    const now = Date.now();
+    leads.forEach((lead) => {
+      statusCounts[lead.status] = (statusCounts[lead.status] ?? 0) + 1;
+      const sourceKey = lead.source?.trim() || 'بدون منبع';
+      sourceCounts[sourceKey] = (sourceCounts[sourceKey] ?? 0) + 1;
+      if (lead.followUpAt && !isClosedStatus(lead.status)) {
+        const followUpTs = new Date(lead.followUpAt).getTime();
+        if (!Number.isNaN(followUpTs) && followUpTs < now) overdueFollowUps += 1;
+      }
+    });
+    const converted = statusCounts.CONVERTED ?? 0;
+    const conversionRate = total > 0 ? (converted / total) * 100 : 0;
+    const sortedSources = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]);
+    return { total, statusCounts, sourceCounts: sortedSources, overdueFollowUps, conversionRate };
+  }, [overviewLeads]);
+
   return (
     <div className="space-y-5">
       <PageBreadcrumb current="لیدها" />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-title-lg font-title">لیدها</h1>
         <div className="flex gap-2 flex-wrap">
-          <Input
-            type="search"
-            placeholder="جستجو..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="w-48 bg-card"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 rounded-xl border border-input bg-card px-3 text-sm"
-          >
-            <option value="">همه وضعیت‌ها</option>
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <Button type="button" onClick={handleCreate} className="whitespace-nowrap">
-            لید جدید
-          </Button>
+          {canManageLeads && (
+            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] p-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('overview')}
+                className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+                  activeTab === 'overview'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-[var(--bg-muted)] text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Overview لیدها
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('list')}
+                className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+                  activeTab === 'list'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-[var(--bg-muted)] text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                لیست لیدها
+              </button>
+            </div>
+          )}
+          {(activeTab === 'list' || !canManageLeads) && (
+            <>
+              <Input
+                type="search"
+                placeholder="جستجو..."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                className="w-48 bg-card"
+              />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-10 rounded-xl border border-input bg-card px-3 text-sm"
+              >
+                <option value="">همه وضعیت‌ها</option>
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <Button type="button" onClick={handleCreate} className="whitespace-nowrap">
+                لید جدید
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -217,7 +333,90 @@ export default function Leads() {
         </Alert>
       )}
 
-      {loading && (
+      {canManageLeads && activeTab === 'overview' && (
+        <div className="space-y-4">
+          {overviewError && (
+            <Alert className="rounded-card border-destructive/30 bg-destructive/10 text-destructive">
+              <AlertDescription>{overviewError}</AlertDescription>
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-sky-100 px-4 py-3">
+              <p className="text-xs text-sky-700">کل لیدها</p>
+              <p className="fa-num mt-1 text-2xl font-black text-sky-900">{formatFaNum(overviewStats.total)}</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100 px-4 py-3">
+              <p className="text-xs text-emerald-700">تبدیل‌شده</p>
+              <p className="fa-num mt-1 text-2xl font-black text-emerald-900">
+                {formatFaNum(overviewStats.statusCounts.CONVERTED ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 px-4 py-3">
+              <p className="text-xs text-amber-700">نرخ تبدیل</p>
+              <p className="fa-num mt-1 text-2xl font-black text-amber-900">{formatFaNum(overviewStats.conversionRate.toFixed(1))}%</p>
+            </div>
+            <div className="rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 to-rose-100 px-4 py-3">
+              <p className="text-xs text-rose-700">پیگیری عقب‌افتاده</p>
+              <p className="fa-num mt-1 text-2xl font-black text-rose-900">{formatFaNum(overviewStats.overdueFollowUps)}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <h3 className="text-sm font-semibold">قیف وضعیت لیدها</h3>
+              <p className="mt-1 text-xs text-muted-foreground">نمای توزیع وضعیت‌ها با رنگ اختصاصی هر مرحله</p>
+              <div className="mt-4 space-y-3">
+                {STATUS_OPTIONS.map((item) => {
+                  const count = overviewStats.statusCounts[item.value] ?? 0;
+                  const width = overviewStats.total > 0 ? Math.max(8, Math.round((count / overviewStats.total) * 100)) : 0;
+                  return (
+                    <div key={item.value} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">{item.label}</span>
+                        <span className="fa-num text-muted-foreground">{formatFaNum(count)}</span>
+                      </div>
+                      <div className={`h-2 overflow-hidden rounded-full ${STATUS_THEME[item.value]?.bg ?? 'bg-slate-100'}`}>
+                        <div
+                          className={`h-full rounded-full ${STATUS_THEME[item.value]?.bar ?? 'bg-slate-600'}`}
+                          style={{ width: `${width}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <h3 className="text-sm font-semibold">منابع لید</h3>
+              <p className="mt-1 text-xs text-muted-foreground">منبع‌های ورودی لید به ترتیب بیشترین سهم</p>
+              <div className="mt-4 space-y-2">
+                {overviewLoading && <Skeleton className="h-24 w-full" />}
+                {!overviewLoading && overviewStats.sourceCounts.length === 0 && (
+                  <p className="text-sm text-muted-foreground">داده‌ای برای نمایش وجود ندارد.</p>
+                )}
+                {!overviewLoading &&
+                  overviewStats.sourceCounts.map(([source, count]) => {
+                    const width = overviewStats.total > 0 ? Math.max(10, Math.round((count / overviewStats.total) * 100)) : 0;
+                    return (
+                      <div key={source} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>{source}</span>
+                          <span className="fa-num text-muted-foreground">{formatFaNum(count)}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-full rounded-full bg-slate-700" style={{ width: `${width}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(activeTab === 'list' || !canManageLeads) && loading && (
         <div className="glass-table-surface overflow-x-auto rounded-card">
           <table className="w-full min-w-[700px]">
             <thead>
@@ -250,7 +449,7 @@ export default function Leads() {
         </div>
       )}
 
-      {!loading && data && (
+      {(activeTab === 'list' || !canManageLeads) && !loading && data && (
         <>
           <div className="glass-table-surface overflow-x-auto rounded-card">
             <table className="w-full min-w-[700px]">
